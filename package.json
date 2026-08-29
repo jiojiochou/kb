@@ -9,7 +9,7 @@
     "server:dev": "pnpm --filter @apps/service run start"
   },
   "keywords": [],
-  "author": "",
+  "author": "codercsx",
   "license": "ISC",
   "packageManager": "pnpm@10.13.1"
 }
