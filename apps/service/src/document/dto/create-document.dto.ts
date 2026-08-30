@@ -36,7 +36,7 @@ export class CreateDocumentDto {
   /** 封面图 URL */
   @IsOptional()
   @IsString()
-  coverImg?: string;
+  coverImage?: string;
 
   /** 标签（逗号分隔） */
   @IsOptional()
