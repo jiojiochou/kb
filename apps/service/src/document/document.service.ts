@@ -93,9 +93,8 @@ export class DocumentService {
     // 默认排除已软删记录
     const qb = this.em
       .createQueryBuilder(DocumentEntity, 'doc')
-      .where('doc.deleted = :deleted and doc.is_public = :is_public', {
+      .where('doc.deleted = :deleted', {
         deleted: false,
-        is_public: true,
       });
 
     // 标题模糊匹配（不区分大小写）
