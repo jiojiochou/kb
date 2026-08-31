@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  flatten,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
 import { EntityManager } from 'typeorm';
@@ -131,12 +136,144 @@ export class DocumentService {
     };
   }
 
-  findOne(id: string) {}
+  /**
+   * 查询文档详情
+   * @param withContent 是否附带 Mongo 正文，默认 true
+   */
+  async findOne(id: string, withContent = true) {
+    const doc = await this.em.findOne(DocumentEntity, {
+      where: { id, deleted: false },
+    });
 
-  update(id: string, dto: UpdateDocumentDto) {}
+    if (!doc) {
+      throw new NotFoundException(`Document ${id} not found`);
+    }
 
-  remove(id: string) {}
+    if (!withContent) {
+      return doc;
+    }
 
+    if (!withContent) {
+      return doc;
+    }
+
+    // 通过 content_id 拉取未删除的正文
+    const contentDoc = await this.contentModel
+      .findOne({ _id: doc.contentId, deleted: false })
+      .lean();
+
+    return {
+      ...doc,
+      content: contentDoc?.content ?? '',
+    };
+  }
+
+  /**
+   * 更新文档
+   * - 有 content：同步更新 Mongo 正文，并递增 version
+   * - 仅改 summary：同步更新 Mongo contentSummary
+   * - 其余字段只更新 Postgres 元数据
+   * - 首次变为「已发布」时写入 publishTime
+   */
+  async update(id: string, dto: UpdateDocumentDto) {
+    const doc = await this.em.findOne(DocumentEntity, {
+      where: { id, deleted: false },
+    });
+
+    if (!doc) {
+      throw new NotFoundException(`Document ${id} not found`);
+    }
+
+    // —— 正文变更 ——
+    if (dto.content !== undefined) {
+      const contentSummary =
+        dto.summary ?? this.buildContentSummary(dto.content);
+      const result = await this.contentModel.updateOne(
+        { _id: doc.contentId, deleted: false },
+        {
+          $set: {
+            content: dto.content,
+            contentLength: dto.content.length,
+            contentSummary,
+          },
+          $inc: { version: 1 }, // 版本号 +1
+        },
+      );
+      if (result.matchedCount === 0) {
+        throw new BadRequestException(
+          `Document content ${doc.contentId} not found`,
+        );
+      }
+      doc.wordCount = this.countWords(dto.content);
+    } else if (dto.summary !== undefined) {
+      // 只改摘要时，同步 Mongo 侧预览字段
+      await this.contentModel.updateOne(
+        { _id: doc.contentId, deleted: false },
+        { $set: { contentSummary: dto.summary } },
+      );
+    }
+
+    // —— 元数据字段（有传才覆盖）——
+    if (dto.title !== undefined) doc.title = dto.title;
+    if (dto.summary !== undefined) doc.summary = dto.summary;
+    if (dto.categoryId !== undefined) doc.categoryId = dto.categoryId;
+    if (dto.teamId !== undefined) doc.teamId = dto.teamId;
+    if (dto.authorId !== undefined) doc.authorId = dto.authorId;
+    if (dto.coverImage !== undefined) doc.coverImage = dto.coverImage;
+    if (dto.tags !== undefined) doc.tags = dto.tags;
+    if (dto.remark !== undefined) doc.remark = dto.remark;
+    if (dto.isPublic !== undefined) doc.isPublic = dto.isPublic;
+    if (dto.updateBy !== undefined) doc.updateBy = dto.updateBy;
+
+    // 状态从非发布 → 发布时，记录发布时间
+    if (dto.status !== undefined) {
+      if (
+        dto.status === DocumentStatus.Published &&
+        doc.status !== DocumentStatus.Published
+      ) {
+        doc.publishTime = new Date();
+      }
+      doc.status = dto.status;
+    }
+
+    const saved = await this.em.save(doc);
+
+    // 本次已带新正文则直接返回；否则再查一次 Mongo
+    if (dto.content !== undefined) {
+      return { ...saved, content: dto.content };
+    }
+
+    const contentDoc = await this.contentModel
+      .findOne({ _id: doc.contentId, deleted: false })
+      .lean();
+    return { ...saved, content: contentDoc?.content ?? '' };
+  }
+
+  /**
+   * 软删除文档
+   * Postgres、Mongo 两侧都将 deleted 置为 true（不物理删正文）
+   */
+  async remove(id: string) {
+    const doc = await this.em.findOne(DocumentEntity, {
+      where: { id, deleted: false },
+    });
+    if (!doc) {
+      throw new NotFoundException(`Document ${id} not found`);
+    }
+
+    doc.deleted = true;
+    await this.em.save(doc);
+    await this.contentModel.updateOne(
+      { _id: doc.contentId },
+      { $set: { deleted: true } },
+    );
+    return { id, deleted: true };
+  }
+
+  /**
+   * 从正文截取预览摘要
+   * 压缩连续空白后截断到 maxLen，超出则追加省略号
+   */
   private buildContentSummary(content: string, maxLen = 200): string {
     const trimmed = content.trim().replace(/\s+/g, ' ');
     return trimmed.length <= maxLen
