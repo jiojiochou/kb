@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  flatten,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
