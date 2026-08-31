@@ -11,6 +11,7 @@ import {
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
 import { DocumentService } from './document.service';
+import { UpdateDocumentDto } from './dto/update-document.dto';
 
 /** 文档接口 */
 @Controller('document')
@@ -36,8 +37,8 @@ export class DocumentController {
 
   /** 更新文档 */
   @Patch(':id')
-  update(@Param('id') id: string) {
-    return this.documentService.update(id);
+  update(@Param('id') id: string, @Body() dto: UpdateDocumentDto) {
+    return this.documentService.update(id, dto);
   }
 
   /** 软删除文档 */

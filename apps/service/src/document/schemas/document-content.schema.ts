@@ -14,11 +14,11 @@ export class DocumentContent {
 
   /** 关联的文档元数据 ID（kb_document.id） */
   @Prop({ type: String, required: true, index: true })
-  documentId?: string;
+  documentId!: string;
 
   /** Markdown 正文 */
   @Prop({ type: String, required: true, default: '' })
-  content?: string;
+  content!: string;
 
   /** 正文字符数 */
   @Prop({ type: Number, default: 0 })
@@ -34,7 +34,7 @@ export class DocumentContent {
 
   /** 逻辑删除 */
   @Prop({ type: Boolean, default: false })
-  deleted?: boolean;
+  deleted!: boolean;
 }
 
 export const DocumentContentSchema =

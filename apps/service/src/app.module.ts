@@ -15,11 +15,11 @@ import { MongooseModule } from '@nestjs/mongoose';
       useFactory(config: ConfigService) {
         return {
           type: 'postgres',
-          host: config.get<string>('POSTGRES_HOST'),
-          port: config.get<number>('POSTGRES_PORT'),
-          username: config.get<string>('POSTGRES_USER'),
-          password: config.get<string>('POSTGRES_PASSWORD'),
-          database: config.get<string>('POSTGRES_DB'),
+          host: config.get<string>('POSTGRES_HOST', 'localhost'),
+          port: config.get<number>('POSTGRES_PORT', 5432),
+          username: config.get<string>('POSTGRES_USER', 'user'),
+          password: config.get<string>('POSTGRES_PASSWORD', '123456'),
+          database: config.get<string>('POSTGRES_DB', 'knowledge_base'),
           entities: [DocumentEntity],
           synchronize: false,
         };
@@ -29,7 +29,10 @@ import { MongooseModule } from '@nestjs/mongoose';
       inject: [ConfigService],
       useFactory(config: ConfigService) {
         return {
-          uri: config.get<string>('MONGO_URI'),
+          uri: config.get<string>(
+            'MONGO_URI',
+            'mongodb://mongo_user:mongo_pass123@localhost:27017/knowledge_base?authSource=admin',
+          ),
         };
       },
     }),
