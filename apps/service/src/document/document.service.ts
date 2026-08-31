@@ -86,7 +86,51 @@ export class DocumentService {
     }
   }
 
-  findAll(query: QueryDocumentDto) {}
+  async findAll(query: QueryDocumentDto) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+
+    // 默认排除已软删记录
+    const qb = this.em
+      .createQueryBuilder(DocumentEntity, 'doc')
+      .where('doc.deleted = :deleted and doc.is_public = :is_public', {
+        deleted: false,
+        is_public: true,
+      });
+
+    // 标题模糊匹配（不区分大小写）
+    if (query.title) {
+      qb.andWhere('doc.title ILIKE :title', { title: `%${query.title}%` });
+    }
+    if (query.categoryId) {
+      qb.andWhere('doc.category_id = :categoryId', {
+        categoryId: query.categoryId,
+      });
+    }
+    if (query.teamId) {
+      qb.andWhere('doc.team_id = :teamId', { teamId: query.teamId });
+    }
+    if (query.authorId) {
+      qb.andWhere('doc.author_id = :authorId', { authorId: query.authorId });
+    }
+    if (query.status !== undefined) {
+      qb.andWhere('doc.status = :status', { status: query.status });
+    }
+
+    // 按创建时间倒序，再分页
+    qb.orderBy('doc.created_at', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+    };
+  }
 
   findOne(id: string) {}
 

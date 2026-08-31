@@ -14,7 +14,7 @@ import { DocumentService } from './document.service';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
 /** 文档接口 */
-@Controller('document')
+@Controller('documents')
 export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
   /** 创建文档 */
