@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,11 +8,15 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
-import { DocumentService } from './document.service';
+import { DocumentService, type DocumentUploadFile } from './document.service';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadParseDto } from './dto/upload-parse.dto';
 
 /** 文档接口 */
 @Controller('documents')
@@ -21,6 +26,24 @@ export class DocumentController {
   @Post()
   create(@Body() dto: CreateDocumentDto) {
     return this.documentService.create(dto);
+  }
+
+  /** 上传文件并解析为 Markdown，创建草稿（form-data 字段名: file） */
+  @Post('upload/parse')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
+  uploadAndParse(
+    @UploadedFile() file: DocumentUploadFile,
+    @Body() meta: UploadParseDto,
+  ) {
+    if (!file) {
+      throw new BadRequestException('请上传文件（form-data 字段名: file）');
+    }
+
+    return this.documentService.uploadAndCreateDocument(file, meta);
   }
 
   /** 分页查询文档列表（仅元数据） */
