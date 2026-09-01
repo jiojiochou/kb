@@ -25,7 +25,6 @@ export interface UploadBytesOptions {
 @Injectable()
 export class RustfsService implements OnModuleInit {
   private readonly logger = new Logger(RustfsService.name);
-
   private client: S3Client | null = null;
   private enabled = false;
   private bucket = '';
@@ -47,27 +46,29 @@ export class RustfsService implements OnModuleInit {
       'RUSTFS_ENDPOINT',
       'http://localhost:9000',
     );
-
-    const accessKey = this.config.get<string>('RUSTFS_ACCESS_KEY');
-    const secretKey = this.config.get<string>('RUSTFS_SECRET_KEY');
-
+    const accessKey = this.config.get<string>(
+      'RUSTFS_ACCESS_KEY',
+      'rustfsadmin',
+    );
+    const secretKey = this.config.get<string>(
+      'RUSTFS_SECRET_KEY',
+      'rustfsadmin',
+    );
     const region = this.config.get<string>('RUSTFS_REGION');
     this.bucket = this.config.get<string>('RUSTFS_BUCKET')!;
     this.publicBaseUrl = (
       this.config.get<string>('RUSTFS_PUBLIC_URL') || endpoint
     ).replace(/\/$/, '');
 
-    this.client = new S3Client([
-      {
-        endpoint,
-        region,
-        credentials: {
-          accessKeyId: accessKey,
-          secretAccessKey: secretKey,
-        },
-        forcePathStyle: true,
+    this.client = new S3Client({
+      endpoint,
+      region,
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretKey,
       },
-    ]);
+      forcePathStyle: true,
+    });
 
     this.logger.log(
       `RustFS 已配置: endpoint=${endpoint}, bucket=${this.bucket}, public=${this.publicBaseUrl}`,
@@ -96,6 +97,7 @@ export class RustfsService implements OnModuleInit {
     }
 
     await this.ensureBucket();
+
     const prefix = (options.prefix ?? 'documents').replace(/^\/+|\/+$/g, '');
     const ext = extname(options.fileName) || guessExt(options.contentType);
     const safeBase = sanitizeBaseName(options.fileName);

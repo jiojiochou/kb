@@ -98,7 +98,7 @@ services:
   # 文档：https://docs.rustfs.com/installation/docker/
   rustfs:
     image: rustfs/rustfs:latest
-    container_name: knowledge_hub_rustfs
+    container_name: knowledge_base_rustfs
     restart: unless-stopped
     ports:
       - '9000:9000' # S3 API

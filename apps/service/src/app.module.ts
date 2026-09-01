@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocumentEntity } from './document/entities/document.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 import { resolve } from 'node:path';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { resolve } from 'node:path';
         };
       },
     }),
+    StorageModule,
     DocumentModule,
   ],
   controllers: [AppController],
