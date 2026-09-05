@@ -158,6 +158,10 @@ importers:
 
   apps/web: {}
 
+  libs/shared: {}
+
+  libs/types: {}
+
 packages:
 
   '@angular-devkit/core@19.2.24':
