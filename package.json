@@ -2,7 +2,6 @@
   "name": "kb",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "private": true,
   "scripts": {
     "server:dev": "pnpm --filter @kb/service run start"
