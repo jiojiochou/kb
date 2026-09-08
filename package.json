@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "server:dev": "pnpm --filter @apps/service run start"
+    "server:dev": "pnpm --filter @kb/service run start"
   },
   "keywords": [],
   "author": "codercsx",
