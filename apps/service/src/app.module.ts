@@ -8,7 +8,6 @@ import { DocumentEntity } from './document/entities/document.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 import { resolve } from 'node:path';
 import { StorageModule } from './storage/storage.module';
-import { MqModule } from './mq/mq.module';
 
 @Module({
   imports: [
@@ -41,7 +40,6 @@ import { MqModule } from './mq/mq.module';
     }),
     StorageModule,
     DocumentModule,
-    MqModule,
   ],
   controllers: [AppController],
   providers: [AppService],
