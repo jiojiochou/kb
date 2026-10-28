@@ -3,11 +3,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoginModule } from './login/login.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './login/entities/user.entity';
 import { UserModule } from './user/user.module';
+import { User } from './user/entities/user.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
+    // 自动创建管理数据库表
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
@@ -22,6 +24,7 @@ import { UserModule } from './user/user.module';
     }),
     LoginModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

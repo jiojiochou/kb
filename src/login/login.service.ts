@@ -1,14 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-// import Redis from 'ioredis';
 
 @Injectable()
 export class LoginService {
-  @InjectRepository(User)
-  private readonly userRepository: Repository<User>;
+  private readonly userRepository;
 
   async login(loginDto: LoginDto) {
     const user = await this.userRepository.findOneBy({

@@ -42,7 +42,7 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/postgres:/var/lib/postgresql/data
     restart: always
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d hello_pg']
+      test: ['CMD-SHELL', 'pg_isready -U user -d kb']
       interval: 5s
       timeout: 5s
       retries: 5
