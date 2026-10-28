@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { LoginService } from './login.service';
 import { LoginController } from './login.controller';
+import { GoogleStrategy } from './google.strategy';
+import { GithubStrategy } from './github.strategy';
 
 @Module({
   imports: [],
   controllers: [LoginController],
-  providers: [LoginService],
+  providers: [LoginService, GoogleStrategy, GithubStrategy],
 })
 export class LoginModule {}
