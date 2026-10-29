@@ -34,6 +34,7 @@ export class LoginController {
       return 'No user from google';
     }
 
+    // 会拿到strategy里validate返回的data
     return {
       message: 'User information from google',
       user: req.user,

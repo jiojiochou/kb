@@ -6,7 +6,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientID:
         '208947966520-j26ohjq4hgcn4fjsv737lf4e61tlo1l0.apps.googleusercontent.com',
       clientSecret: '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',
-      callbackURL: 'http://localhost:3000/user/callback/google',
+      callbackURL: 'http://localhost:3000/login/callback/google',
       scope: ['email', 'profile'],
     });
   }
@@ -20,6 +20,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       lastName: name.familyName,
       picture: photos[0].value,
       accessToken,
+      ikun: true,
     };
     return user;
   }
