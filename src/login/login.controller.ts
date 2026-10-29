@@ -10,10 +10,14 @@ import {
 import { LoginService } from './login.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { UserService } from 'src/user/user.service';
 
 @Controller('login')
 export class LoginController {
-  constructor(private readonly loginService: LoginService) {}
+  constructor(
+    private readonly loginService: LoginService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post()
   async login(@Body() loginDto: LoginDto, @Session() session) {
@@ -29,25 +33,33 @@ export class LoginController {
 
   @Get('callback/google')
   @UseGuards(AuthGuard('google'))
-  googleLoginRedirect(@Req() req) {
-    if (!req.user) {
-      return 'No user from google';
+  async googleLoginRedirect(@Req() req) {
+    const user = await this.userService.findGoogleUserByEmail(req.user.email);
+
+    if (!user) {
+      const newUser = await this.userService.registerByGoogle(req.user);
+      return newUser;
     }
 
-    // 会拿到strategy里validate返回的data
-    return {
-      message: 'User information from google',
-      user: req.user,
-    };
+    return user;
   }
 
   @Get('github')
   @UseGuards(AuthGuard('github'))
-  async githubLogin() {}
+  async githubLogin() {
+    return 'ikun';
+  }
 
   @Get('callback/github')
   @UseGuards(AuthGuard('github'))
-  githubLoginRedirect(@Req() req) {
-    return req.user;
+  async githubLoginRedirect(@Req() req) {
+    const user = await this.userService.findUserByGithubId(req.user);
+
+    if (!user) {
+      const newUser = this.userService.registerByGithub(req.user);
+      return newUser;
+    }
+
+    return user;
   }
 }

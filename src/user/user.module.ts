@@ -18,5 +18,6 @@ import { SnowflakeIdModule } from '@street-devs/nest-snowflake-id';
   ],
   controllers: [UserController],
   providers: [UserService],
+  exports: [UserService],
 })
 export class UserModule {}

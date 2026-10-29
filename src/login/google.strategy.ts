@@ -1,5 +1,17 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, Profile } from 'passport-google-oauth20';
+
+export interface GoogleInfo {
+  id: string;
+  email: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  picture: string;
+  accessToken: string;
+  ikun: true;
+}
+
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor() {
     super({
@@ -12,10 +24,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   validate(accessToken: string, refreshToken: string, profile: Profile) {
-    const { name, emails, photos } = profile;
+    const { id, displayName, emails, name, photos } = profile;
 
     const user = {
+      id,
       email: emails[0].value,
+      displayName,
       firstName: name.givenName,
       lastName: name.familyName,
       picture: photos[0].value,
