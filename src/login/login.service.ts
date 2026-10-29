@@ -18,7 +18,7 @@ export class LoginService {
       throw new BadRequestException('账号或密码错误');
     }
 
-    const { password, ...reset } = user;
+    const { password: _, ...reset } = user;
 
     return reset;
   }

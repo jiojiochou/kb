@@ -47,7 +47,7 @@ export class LoginController {
   @Get('github')
   @UseGuards(AuthGuard('github'))
   async githubLogin() {
-    return 'ikun';
+    return 'github盐都不盐了';
   }
 
   @Get('callback/github')
