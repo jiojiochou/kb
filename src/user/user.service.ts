@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
 import { CreateUserDto } from './dto/create.dto';
 import { QueryFailedError, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { RegisterType, User } from './entities/user.entity';
 import { type GoogleInfo } from 'src/login/google.strategy';
 import { Profile } from 'passport-github2';
 
@@ -22,7 +22,7 @@ export class UserService {
       password: createUserDto.password,
       email: createUserDto.email,
       name: createUserDto.name,
-      registerType: 1,
+      registerType: RegisterType.normal,
     });
 
     try {
@@ -52,7 +52,7 @@ export class UserService {
 
   async findGoogleUserByEmail(email: string) {
     return await this.userRepository.findOneBy({
-      registerType: 2,
+      registerType: RegisterType.google,
       email,
     });
   }
@@ -66,7 +66,7 @@ export class UserService {
       firstName: info.firstName,
       lastName: info.lastName,
       avatar: info.picture,
-      registerType: 2,
+      registerType: RegisterType.google,
     });
 
     return await this.userRepository.save(user);
@@ -75,7 +75,7 @@ export class UserService {
   async findUserByGithubId(profile: Profile) {
     return await this.userRepository.findOneBy({
       id: profile.id,
-      registerType: 3,
+      registerType: RegisterType.github,
     });
   }
 
@@ -84,7 +84,7 @@ export class UserService {
       id: info.id,
       name: info.displayName,
       avatar: info.photos[0].value,
-      registerType: 3,
+      registerType: RegisterType.github,
     });
 
     return await this.userRepository.save(user);
