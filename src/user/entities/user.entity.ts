@@ -47,14 +47,15 @@ export class User {
   })
   password: string;
 
-  // 用户名称
+  // 账号昵称
   @Column({
     type: 'varchar',
+    name: 'display_name',
     length: 50,
     nullable: true,
-    comment: '用户名称',
+    comment: '账号昵称',
   })
-  name: string;
+  displayName: string;
 
   @Column({
     type: 'varchar',
@@ -83,6 +84,7 @@ export class User {
 
   @Column({
     type: 'varchar',
+    length: 2048,
     nullable: true,
     comment: '头像',
   })

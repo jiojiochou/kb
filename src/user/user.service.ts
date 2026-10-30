@@ -21,7 +21,7 @@ export class UserService {
       account: createUserDto.account,
       password: createUserDto.password,
       email: createUserDto.email,
-      name: createUserDto.name,
+      displayName: createUserDto.displayName,
       registerType: RegisterType.normal,
     });
 
@@ -61,8 +61,7 @@ export class UserService {
     const user = this.userRepository.create({
       id: info.id,
       email: info.email,
-      account: info.email,
-      name: info.displayName,
+      displayName: info.displayName,
       firstName: info.firstName,
       lastName: info.lastName,
       avatar: info.picture,
@@ -82,7 +81,7 @@ export class UserService {
   async registerByGithub(info: Profile) {
     const user = this.userRepository.create({
       id: info.id,
-      name: info.displayName,
+      displayName: info.displayName,
       avatar: info.photos[0].value,
       registerType: RegisterType.github,
     });
