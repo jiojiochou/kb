@@ -59,7 +59,7 @@ export class UserService {
 
   async registerByGoogle(info: GoogleInfo) {
     const user = this.userRepository.create({
-      id: this.snowflakeIdService.generate().toString(),
+      id: info.id,
       email: info.email,
       displayName: info.displayName,
       firstName: info.firstName,
@@ -81,7 +81,6 @@ export class UserService {
   async registerByGithub(info: Profile) {
     const user = this.userRepository.create({
       id: info.id,
-      account: info.username,
       displayName: info.displayName,
       avatar: info.photos[0].value,
       registerType: RegisterType.github,
