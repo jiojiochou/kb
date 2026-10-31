@@ -1,25 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { RegisterType, User } from 'src/user/entities/user.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class LoginService {
-  private readonly userRepository;
+  @InjectRepository(User)
+  private readonly userRepository: Repository<User>;
 
   async login(loginDto: LoginDto) {
-    const user = await this.userRepository.findOneBy({
-      account: loginDto.account,
-    });
-
-    if (!user) {
-      throw new BadRequestException('没有找到');
-    }
-
-    if (loginDto.password !== user.password) {
-      throw new BadRequestException('账号或密码错误');
-    }
-
-    const { password: _, ...reset } = user;
-
-    return reset;
+    // 1. 用户邮箱密码登录
+    // 2. 用户账号密码登录
   }
 }
