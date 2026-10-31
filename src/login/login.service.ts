@@ -1,16 +1,24 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/login.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { RegisterType, User } from 'src/user/entities/user.entity';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class LoginService {
-  @InjectRepository(User)
-  private readonly userRepository: Repository<User>;
+  constructor(private readonly userService: UserService) {}
 
   async login(loginDto: LoginDto) {
-    // 1. 用户邮箱密码登录
-    // 2. 用户账号密码登录
+    const identity = await this.userService.findPasswordIdentity(
+      loginDto.account,
+    );
+
+    if (
+      !identity?.passwordHash ||
+      !(await bcrypt.compare(loginDto.password, identity.passwordHash))
+    ) {
+      throw new UnauthorizedException('账号或密码错误');
+    }
+
+    return this.userService.recordPasswordLogin(identity.user);
   }
 }

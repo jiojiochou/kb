@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
 import { AuthModule } from './auth/auth.module';
 import { RsaService } from './auth/rsa.service';
+import { UserIdentity } from './user/entities/user-identity.entity';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { RsaService } from './auth/rsa.service';
       database: 'kb',
       synchronize: true, // 自动根据实体创建表
       logging: true, // 控制台sql日志
-      entities: [User], // 连接实体
+      entities: [User, UserIdentity],
       poolSize: 10,
     }),
     LoginModule,

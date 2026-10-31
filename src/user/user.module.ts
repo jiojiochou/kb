@@ -4,10 +4,11 @@ import { UserController } from './user.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { SnowflakeIdModule } from '@street-devs/nest-snowflake-id';
+import { UserIdentity } from './entities/user-identity.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]), // 引入User实体
+    TypeOrmModule.forFeature([User, UserIdentity]),
     SnowflakeIdModule.forRoot({
       customEpoch: 1609459200000,
       machineId: {

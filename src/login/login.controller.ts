@@ -33,14 +33,9 @@ export class LoginController {
 
   @Get('callback/google')
   @UseGuards(AuthGuard('google'))
-  async googleLoginRedirect(@Req() req) {
-    const user = await this.userService.findGoogleUserByEmail(req.user.email);
-
-    if (!user) {
-      const newUser = await this.userService.registerByGoogle(req.user);
-      return newUser;
-    }
-
+  async googleLoginRedirect(@Req() req, @Session() session) {
+    const user = await this.userService.loginOrRegisterByGoogle(req.user);
+    session.user = user;
     return user;
   }
 
@@ -52,14 +47,9 @@ export class LoginController {
 
   @Get('callback/github')
   @UseGuards(AuthGuard('github'))
-  async githubLoginRedirect(@Req() req) {
-    const user = await this.userService.findUserByGithubId(req.user);
-
-    if (!user) {
-      const newUser = this.userService.registerByGithub(req.user);
-      return newUser;
-    }
-
+  async githubLoginRedirect(@Req() req, @Session() session) {
+    const user = await this.userService.loginOrRegisterByGithub(req.user);
+    session.user = user;
     return user;
   }
 }

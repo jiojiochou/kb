@@ -4,12 +4,11 @@ import { Strategy, Profile } from 'passport-google-oauth20';
 export interface GoogleInfo {
   id: string;
   email: string;
+  emailVerified: boolean;
   displayName: string;
   firstName: string;
   lastName: string;
   picture: string;
-  accessToken: string;
-  ikun: true;
 }
 
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -25,16 +24,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
   validate(accessToken: string, refreshToken: string, profile: Profile) {
     const { id, displayName, emails, name, photos } = profile;
+    const email = emails?.[0];
+    const rawProfile = profile._json as {
+      email_verified?: boolean;
+      verified_email?: boolean;
+    };
 
     const user = {
       id,
-      email: emails[0].value,
+      email: email?.value ?? '',
+      emailVerified:
+        rawProfile.email_verified ?? rawProfile.verified_email ?? false,
       displayName,
       firstName: name.givenName,
       lastName: name.familyName,
-      picture: photos[0].value,
-      accessToken,
-      ikun: true,
+      picture: photos?.[0]?.value ?? '',
     };
     return user;
   }
