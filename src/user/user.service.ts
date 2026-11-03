@@ -3,7 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
 import * as bcrypt from 'bcrypt';
 import { Profile } from 'passport-github2';
-import { DataSource, EntityManager, QueryFailedError, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  QueryFailedError,
+  Repository,
+} from 'typeorm';
 import { type GoogleInfo } from 'src/login/google.strategy';
 import { CreateUserDto } from './dto/create.dto';
 import {
@@ -82,9 +87,7 @@ export class UserService {
     if (existing) return this.recordLogin(existing.user);
 
     const verifiedEmail =
-      info.email && info.emailVerified
-        ? this.normalizeEmail(info.email)
-        : null;
+      info.email && info.emailVerified ? this.normalizeEmail(info.email) : null;
 
     try {
       return await this.dataSource.transaction(async (manager) => {
@@ -93,7 +96,8 @@ export class UserService {
           IdentityProvider.google,
           info.id,
         );
-        if (identity) return this.recordLoginWithManager(manager, identity.user);
+        if (identity)
+          return this.recordLoginWithManager(manager, identity.user);
 
         // Google 仅在返回已验证邮箱时，才绑定到已有用户。
         let user = verifiedEmail
@@ -151,7 +155,8 @@ export class UserService {
           IdentityProvider.github,
           info.id,
         );
-        if (identity) return this.recordLoginWithManager(manager, identity.user);
+        if (identity)
+          return this.recordLoginWithManager(manager, identity.user);
 
         // GitHub 首次登录始终创建独立用户，不通过邮箱自动合并。
         const user = await manager.save(

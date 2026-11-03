@@ -34,7 +34,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       id,
       email: email?.value ?? '',
       emailVerified:
-        rawProfile.email_verified ?? rawProfile.verified_email ?? false,
+        email.verified ??
+        rawProfile.email_verified ??
+        rawProfile.verified_email ??
+        false, //确认当前用户确实拥有这个邮箱
       displayName,
       firstName: name.givenName,
       lastName: name.familyName,

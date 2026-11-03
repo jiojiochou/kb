@@ -6,8 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
 import { AuthModule } from './auth/auth.module';
-import { RsaService } from './auth/rsa.service';
 import { UserIdentity } from './user/entities/user-identity.entity';
+import { RsaModule, RsaService } from '@app/rsa';
 
 @Module({
   imports: [
@@ -24,6 +24,7 @@ import { UserIdentity } from './user/entities/user-identity.entity';
       entities: [User, UserIdentity],
       poolSize: 10,
     }),
+    RsaModule,
     LoginModule,
     UserModule,
     AuthModule,
