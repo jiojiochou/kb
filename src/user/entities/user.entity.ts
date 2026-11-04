@@ -3,22 +3,17 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryColumn,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity({ name: 'user' })
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
   @PrimaryColumn({
     type: 'bigint',
     unique: true,
-    name: 'user_id',
     comment: '用户唯一id',
   })
-  userId: string;
+  id: string;
 
   @Column({
     type: 'varchar',
