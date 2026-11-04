@@ -10,8 +10,7 @@ import {
 export class User {
   @PrimaryColumn({
     type: 'bigint',
-    unique: true,
-    comment: '用户唯一id',
+    comment: '用户id',
   })
   id: string;
 
@@ -26,7 +25,7 @@ export class User {
   @Column({
     type: 'citext',
     unique: true,
-    comment: '用户已验证邮箱',
+    comment: '用户邮箱',
   })
   email: string;
 
