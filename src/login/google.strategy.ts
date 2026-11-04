@@ -23,26 +23,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   validate(accessToken: string, refreshToken: string, profile: Profile) {
-    const { id, displayName, emails, name, photos } = profile;
-    const email = emails?.[0];
-    const rawProfile = profile._json as {
-      email_verified?: boolean;
-      verified_email?: boolean;
-    };
-
-    const user = {
-      id,
-      email: email?.value ?? '',
-      emailVerified:
-        email.verified ??
-        rawProfile.email_verified ??
-        rawProfile.verified_email ??
-        false, //确认当前用户确实拥有这个邮箱
-      displayName,
-      firstName: name.givenName,
-      lastName: name.familyName,
-      picture: photos?.[0]?.value ?? '',
-    };
-    return user;
+    return profile;
   }
 }
