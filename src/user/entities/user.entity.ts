@@ -38,13 +38,6 @@ export class User {
   password: string;
 
   @Column({
-    type: 'boolean',
-    name: 'email_verify',
-    default: false,
-  })
-  emailVerify: boolean;
-
-  @Column({
     type: 'varchar',
     length: 50,
     nullable: true,

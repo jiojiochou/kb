@@ -12,6 +12,8 @@
   },
   "moduleNameMapper": {
     "@app/rsa/(.*)": "<rootDir>/../libs/rsa/src/$1",
-    "@app/rsa": "<rootDir>/../libs/rsa/src"
+    "@app/rsa": "<rootDir>/../libs/rsa/src",
+    "@app/decorators/(.*)": "<rootDir>/../libs/decorators/src/$1",
+    "@app/decorators": "<rootDir>/../libs/decorators/src"
   }
 }

@@ -7,19 +7,23 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Trim } from '@app/decorators';
 
 export class RegisterUserDto {
+  @IsString()
+  @Length(1, 50)
+  @Trim()
+  account: string;
+
   @IsEmail()
   @Length(1, 100)
+  @Trim()
   email: string;
 
   @IsString()
-  @Length(1, 50)
-  account: string;
-
-  @IsString()
-  @MinLength(6)
-  @MaxLength(128)
+  @MinLength(8)
+  @MaxLength(255)
+  @Trim()
   password: string;
 
   @IsOptional()
