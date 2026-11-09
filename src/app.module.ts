@@ -8,9 +8,14 @@ import { User } from './user/entities/user.entity';
 import { AuthModule } from './auth/auth.module';
 import { UserIdentity } from './user/entities/user-identity.entity';
 import { RsaModule, RsaService } from '@app/rsa';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     // 自动创建管理数据库表
     TypeOrmModule.forRoot({
       type: 'postgres',
