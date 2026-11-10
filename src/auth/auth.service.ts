@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { SendEmailVerificationCodeDto } from './dto/send-email-verification-code.dto';
 import { ConfigService } from '@nestjs/config';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { VerificationCodeStore } from './verification-code-store.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly verificationCodeStore: VerificationCodeStore,
+  ) {}
 
   async sendEmailVerificationCode(
     emailVerifyDto: SendEmailVerificationCodeDto,
@@ -26,14 +31,33 @@ export class AuthService {
       },
     });
 
-    const info = await transporter.sendMail({
-      from: this.configService.get<string>('QQ_EMAIL_SENDER', ''), // 发件人
-      to: emailVerifyDto.email, // 收件人
-      subject: "knowledge-base's captcha", // 邮件标题
-      text: `your captcha is ${code}`, // 邮件内容
-    });
+    try {
+      // 先保存验证码，Redis 写入失败时不发送邮件；有效期由存储服务设置为 5 分钟。
+      await this.verificationCodeStore.save(emailVerifyDto.email, code);
+    } catch {
+      throw new InternalServerErrorException('验证码保存失败，请稍后重试');
+    }
 
-    console.log('邮件发送成功', info.messageId);
+    try {
+      /**
+       * TODO:
+       * sendMail({
+       *  html: ....
+       * })
+       * 后续可以传入html美化一下邮件消息
+       */
+      await transporter.sendMail({
+        from: this.configService.get<string>('QQ_EMAIL_SENDER', ''), // 发件人
+        to: emailVerifyDto.email, // 收件人
+        subject: "knowledge-base's captcha", // 邮件标题
+        text: `your captcha is ${code}`, // 邮件内容
+      });
+    } catch {
+      await this.verificationCodeStore
+        .removeIfMatches(emailVerifyDto.email, code)
+        .catch(() => undefined);
+      throw new InternalServerErrorException('验证码邮件发送失败，请稍后重试');
+    }
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {}

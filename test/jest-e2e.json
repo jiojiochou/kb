@@ -11,6 +11,7 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^@app/redis(|/.*)$": "<rootDir>/../libs/redis/src/$1",
     "@app/rsa/(.*)": "<rootDir>/../libs/rsa/src/$1",
     "@app/rsa": "<rootDir>/../libs/rsa/src",
     "@app/decorators/(.*)": "<rootDir>/../libs/decorators/src/$1",

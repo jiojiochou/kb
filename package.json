@@ -80,8 +80,20 @@
     "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "allowJs": true,
+            "esModuleInterop": true
+          }
+        }
+      ]
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!\\.pnpm/|@nestjs/config/)",
+      "node_modules/\\.pnpm/(?!@nestjs\\+config@)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
@@ -92,6 +104,7 @@
       "<rootDir>/libs/"
     ],
     "moduleNameMapper": {
+      "^@app/redis(|/.*)$": "<rootDir>/libs/redis/src/$1",
       "^@app/rsa(|/.*)$": "<rootDir>/libs/rsa/src/$1",
       "^@app/decorators(|/.*)$": "<rootDir>/libs/decorators/src/$1"
     }

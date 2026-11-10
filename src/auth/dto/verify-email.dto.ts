@@ -4,7 +4,8 @@ import { IsString, Matches } from 'class-validator';
 import { Trim } from '@app/decorators';
 
 /**
- * 使用PickType只继承SendEmailVerificationCodeDto的email字段 忽略新字段
+ * 使用PickType只继承SendEmailVerificationCodeDto的email字段，忽略新字段
+ * 使用PartialType字段变成选填
  */
 export class VerifyEmailDto extends PickType(SendEmailVerificationCodeDto, [
   'email',
