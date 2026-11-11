@@ -52,9 +52,9 @@ export class VerificationCodeStore {
     return true;
   }
 
-  async removeIfMatches(email: string, code: string): Promise<void> {
-    // 避免发送失败时误删另一次请求生成的验证码。
-    await this.redisService.client.eval(
+  async removeIfMatches(email: string, code: string): Promise<boolean> {
+    // 校验成功即消费验证码；同时避免发送失败时误删另一次请求生成的验证码。
+    const removed = await this.redisService.client.eval(
       `if redis.call('GET', KEYS[1]) == ARGV[1] then
         return redis.call('DEL', KEYS[1])
       end
@@ -63,6 +63,7 @@ export class VerificationCodeStore {
       this.key(email),
       code,
     );
+    return removed === 1;
   }
 
   private key(email: string): string {

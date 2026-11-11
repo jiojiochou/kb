@@ -186,3 +186,47 @@ describe('VerificationCodeStore sending quota', () => {
     },
   );
 });
+
+describe('VerificationCodeStore conditional consumption', () => {
+  const evalScript = jest.fn();
+  let store: VerificationCodeStore;
+
+  beforeEach(() => {
+    evalScript.mockReset();
+    store = new VerificationCodeStore(
+      { client: { eval: evalScript } } as unknown as RedisService,
+      new ConfigService({}),
+    );
+  });
+
+  it('returns true when the matching code is deleted', async () => {
+    evalScript.mockResolvedValue(1);
+
+    await expect(
+      store.removeIfMatches(' person@example.com ', '123456'),
+    ).resolves.toBe(true);
+    expect(evalScript).toHaveBeenCalledWith(
+      expect.any(String),
+      1,
+      'auth:email-verification:person@example.com',
+      '123456',
+    );
+  });
+
+  it('returns false when no matching code was deleted', async () => {
+    evalScript.mockResolvedValue(0);
+
+    await expect(
+      store.removeIfMatches('person@example.com', '123456'),
+    ).resolves.toBe(false);
+  });
+
+  it('propagates Redis errors to the caller', async () => {
+    const error = new Error('Redis unavailable');
+    evalScript.mockRejectedValue(error);
+
+    await expect(
+      store.removeIfMatches('person@example.com', '123456'),
+    ).rejects.toBe(error);
+  });
+});

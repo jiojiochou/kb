@@ -82,3 +82,51 @@ describe('AuthService email verification sending', () => {
     expect(store.save).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AuthService email verification', () => {
+  const email = 'person@example.com';
+  const code = '123456';
+  let service: AuthService;
+  let removeIfMatches: jest.Mock;
+
+  beforeEach(() => {
+    removeIfMatches = jest.fn();
+    service = new AuthService(new ConfigService({}), {
+      removeIfMatches,
+    } as unknown as VerificationCodeStore);
+  });
+
+  it('accepts a code only when it was matched and consumed', async () => {
+    removeIfMatches.mockResolvedValue(true);
+
+    await expect(service.verifyEmail({ email, code })).resolves.toBeUndefined();
+    expect(removeIfMatches).toHaveBeenCalledWith(email, code);
+  });
+
+  it('rejects an incorrect, expired or previously consumed code with 400', async () => {
+    removeIfMatches.mockResolvedValue(false);
+
+    await expect(service.verifyEmail({ email, code })).rejects.toMatchObject({
+      status: 400,
+      message: '验证码错误或已失效',
+    });
+  });
+
+  it('rejects reuse after a successful verification', async () => {
+    removeIfMatches.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    await service.verifyEmail({ email, code });
+    await expect(service.verifyEmail({ email, code })).rejects.toMatchObject({
+      status: 400,
+    });
+  });
+
+  it('returns 500 when Redis fails instead of reporting an invalid code', async () => {
+    removeIfMatches.mockRejectedValue(new Error('Redis unavailable'));
+
+    await expect(service.verifyEmail({ email, code })).rejects.toMatchObject({
+      status: 500,
+      message: '验证码校验失败，请稍后重试',
+    });
+  });
+});

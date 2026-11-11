@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -72,5 +73,19 @@ export class AuthService {
     }
   }
 
-  async verifyEmail(verifyEmailDto: VerifyEmailDto) {}
+  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<void> {
+    let verified: boolean;
+    try {
+      verified = await this.verificationCodeStore.removeIfMatches(
+        verifyEmailDto.email,
+        verifyEmailDto.code,
+      );
+    } catch {
+      throw new InternalServerErrorException('验证码校验失败，请稍后重试');
+    }
+
+    if (!verified) {
+      throw new BadRequestException('验证码错误或已失效');
+    }
+  }
 }
