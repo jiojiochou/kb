@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { SendEmailVerificationCodeDto } from './dto/send-email-verification-code.dto';
@@ -17,6 +22,20 @@ export class AuthService {
     emailVerifyDto: SendEmailVerificationCodeDto,
   ) {
     const code = randomInt(100000, 1000000).toString();
+    let saved: boolean;
+    try {
+      // 先检查发送额度并保存验证码，Redis 失败或额度耗尽时不发送邮件。
+      saved = await this.verificationCodeStore.save(emailVerifyDto.email, code);
+    } catch {
+      throw new InternalServerErrorException('验证码保存失败，请稍后重试');
+    }
+    if (!saved) {
+      throw new HttpException(
+        '验证码发送次数已达上限，请稍后重试',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     /**
      * 发邮件使用SMTP协议
      * 收邮件使用POP3协议、IMAP协议
@@ -30,13 +49,6 @@ export class AuthService {
         pass: this.configService.get<string>('QQ_EMAIL_OAUTH_PASS', ''),
       },
     });
-
-    try {
-      // 先保存验证码，Redis 写入失败时不发送邮件；有效期由存储服务设置为 5 分钟。
-      await this.verificationCodeStore.save(emailVerifyDto.email, code);
-    } catch {
-      throw new InternalServerErrorException('验证码保存失败，请稍后重试');
-    }
 
     try {
       /**

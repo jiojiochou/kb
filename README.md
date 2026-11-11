@@ -45,6 +45,18 @@ $ pnpm run start:dev
 $ pnpm run start:prod
 ```
 
+## 邮箱验证码发送限制
+
+`POST /auth/email/verification-code` 默认限制同一邮箱在首次请求起的 3600 秒内
+最多发送 5 次；邮箱大小写和首尾空格不影响额度，超限返回 HTTP 429。
+
+可通过环境变量 `EMAIL_VERIFICATION_SEND_LIMIT`（默认 `5`）和
+`EMAIL_VERIFICATION_SEND_WINDOW_SECONDS`（默认 `3600`）调整，值必须为正整数。
+
+发送计数使用 Redis 7 的 `MULTI + INCR + EXPIRE NX`，并发请求共用额度，
+后续请求不会延长窗口。超限请求也计数，但不会覆盖验证码；发送或保存失败仍占用额度。
+验证码有效期为 5 分钟，发送失败时保留 Lua 按值匹配删除，避免误删其他请求的验证码。
+
 ## Run tests
 
 ```bash
