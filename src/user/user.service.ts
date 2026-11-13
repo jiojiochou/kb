@@ -73,10 +73,10 @@ export class UserService {
         };
         // 23505: unique_violation,并发注册时查重已通过但插入撞上唯一索引
         if (code === '23505') {
-          if (constraint === 'UQ_user_account') {
+          if (constraint === 'uq_user_account') {
             throw new ConflictException('账号已被注册');
           }
-          if (constraint === 'UQ_user_email') {
+          if (constraint === 'uq_user_email') {
             throw new ConflictException('邮箱已被注册');
           }
         }

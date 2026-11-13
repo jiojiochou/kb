@@ -29,8 +29,8 @@ describe('UserService registration conflicts', () => {
   });
 
   it.each([
-    ['UQ_user_account', '账号已存在'],
-    ['UQ_user_email', '邮箱已被注册'],
+    ['uq_user_account', '账号已被注册'],
+    ['uq_user_email', '邮箱已被注册'],
   ])(
     'returns 409 for concurrent conflicts on %s',
     async (constraint, message) => {
@@ -55,7 +55,7 @@ describe('UserService registration conflicts', () => {
   it.each([
     ['23505', 'PK_user_id'],
     ['23505', undefined],
-    ['23502', 'UQ_user_account'],
+    ['23502', 'uq_user_account'],
   ])('returns 500 for code %s and constraint %s', async (code, constraint) => {
     save.mockRejectedValue(
       new QueryFailedError(

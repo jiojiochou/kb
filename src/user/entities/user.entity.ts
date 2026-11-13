@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'user' })
-@Unique('UQ_user_account', ['account'])
-@Unique('UQ_user_email', ['email'])
+@Unique('uq_user_account', ['account'])
+@Unique('uq_user_email', ['email'])
 export class User {
   @PrimaryColumn({
     type: 'bigint',
