@@ -3,10 +3,13 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity({ name: 'user' })
+@Unique('UQ_user_account', ['account'])
+@Unique('UQ_user_email', ['email'])
 export class User {
   @PrimaryColumn({
     type: 'bigint',
@@ -17,14 +20,12 @@ export class User {
   @Column({
     type: 'varchar',
     length: 50,
-    unique: true,
     comment: '用户账号',
   })
   account: string;
 
   @Column({
     type: 'citext',
-    unique: true,
     comment: '用户邮箱',
   })
   email: string;
