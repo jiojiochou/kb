@@ -33,11 +33,7 @@ export class LoginController {
 
   @Get('callback/google')
   @UseGuards(AuthGuard('google'))
-  async googleLoginRedirect(@Req() req, @Session() session) {
-    const user = await this.userService.loginOrRegisterByGoogle(req.user);
-    session.user = user;
-    return user;
-  }
+  async googleLoginRedirect(@Req() req, @Session() session) {}
 
   @Get('github')
   @UseGuards(AuthGuard('github'))
@@ -47,9 +43,5 @@ export class LoginController {
 
   @Get('callback/github')
   @UseGuards(AuthGuard('github'))
-  async githubLoginRedirect(@Req() req, @Session() session) {
-    const user = await this.userService.loginOrRegisterByGithub(req.user);
-    session.user = user;
-    return user;
-  }
+  async githubLoginRedirect(@Req() req, @Session() session) {}
 }
