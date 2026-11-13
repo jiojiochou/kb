@@ -85,6 +85,22 @@ export class UserService {
     }
   }
 
+  async findUserByAccount(account: string): Promise<User | null> {
+    const normalizedAccount = account?.trim();
+    if (!normalizedAccount) {
+      throw new BadRequestException('account不能为空');
+    }
+    return await this.userRepository.findOneBy({ account: normalizedAccount });
+  }
+
+  async findUserByEmail(email: string): Promise<User | null> {
+    const normalizedEmail = email?.trim();
+    if (!normalizedEmail) {
+      throw new BadRequestException('email不能为空');
+    }
+    return await this.userRepository.findOneBy({ email: normalizedEmail });
+  }
+
   async isAccountTaken(account: string) {
     if (!account) {
       throw new BadRequestException('account不能为空');
