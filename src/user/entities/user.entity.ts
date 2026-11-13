@@ -19,7 +19,7 @@ export class User {
 
   @Column({
     type: 'varchar',
-    length: 50,
+    length: 25,
     comment: '用户账号',
   })
   account: string;
