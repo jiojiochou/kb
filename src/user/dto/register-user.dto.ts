@@ -13,8 +13,8 @@ import { Trim } from '@app/decorators';
 export class RegisterUserDto {
   @IsString()
   @Length(1, 25)
-  @Matches(/^[A-Za-z0-9_]+$/, {
-    message: '账号只能包含英文字母、数字和下划线',
+  @Matches(/^[A-Za-z0-9_.-]+$/, {
+    message: '账号只能包含英文字母、数字、下划线、点和连字符',
   })
   @Trim()
   account: string;
