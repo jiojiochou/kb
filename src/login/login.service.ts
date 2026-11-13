@@ -1,11 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { UserService } from 'src/user/user.service';
-import { LoginDto } from './dto/login.dto';
+import { Injectable } from '@nestjs/common';
+import { UserService } from '../user/user.service.js';
+import { LoginDto } from './dto/login.dto.js';
 
 @Injectable()
 export class LoginService {
   constructor(private readonly userService: UserService) {}
 
-  async login(loginDto: LoginDto) {}
+  async login(_loginDto: LoginDto) {}
 }

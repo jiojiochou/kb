@@ -1,28 +1,31 @@
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
-import { AuthService } from './auth.service';
-import { VerificationCodeStore } from './verification-code-store.service';
+import type { Mock } from 'vitest';
+import { AuthService } from './auth.service.js';
+import { VerificationCodeStore } from './verification-code-store.service.js';
 
-jest.mock('nodemailer', () => ({
-  __esModule: true,
-  default: { createTransport: jest.fn() },
+vi.mock('nodemailer', () => ({
+  default: { createTransport: vi.fn() },
 }));
 
 describe('AuthService email verification sending', () => {
   const email = 'person@example.com';
   let service: AuthService;
-  let sendMail: jest.Mock;
-  let store: { save: jest.Mock; removeIfMatches: jest.Mock };
+  let sendMail: Mock;
+  let store: {
+    save: Mock;
+    removeIfMatches: Mock;
+  };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    sendMail = jest.fn().mockResolvedValue({});
-    jest.mocked(nodemailer.createTransport).mockReturnValue({
+    vi.clearAllMocks();
+    sendMail = vi.fn().mockResolvedValue({});
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
       sendMail,
     } as unknown as ReturnType<typeof nodemailer.createTransport>);
     store = {
-      save: jest.fn().mockResolvedValue(true),
-      removeIfMatches: jest.fn().mockResolvedValue(undefined),
+      save: vi.fn().mockResolvedValue(true),
+      removeIfMatches: vi.fn().mockResolvedValue(undefined),
     };
     service = new AuthService(
       new ConfigService({}),
@@ -87,10 +90,10 @@ describe('AuthService email verification', () => {
   const email = 'person@example.com';
   const code = '123456';
   let service: AuthService;
-  let removeIfMatches: jest.Mock;
+  let removeIfMatches: Mock;
 
   beforeEach(() => {
-    removeIfMatches = jest.fn();
+    removeIfMatches = vi.fn();
     service = new AuthService(new ConfigService({}), {
       removeIfMatches,
     } as unknown as VerificationCodeStore);

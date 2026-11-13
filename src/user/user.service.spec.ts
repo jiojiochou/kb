@@ -1,15 +1,12 @@
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
 import { QueryFailedError, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-import { UserService } from './user.service';
-
-jest.mock('@nestjs/typeorm', () => ({
-  InjectRepository: () => () => undefined,
-}));
+import type { Mock } from 'vitest';
+import { User } from './entities/user.entity.js';
+import { UserService } from './user.service.js';
 
 describe('UserService registration conflicts', () => {
   let service: UserService;
-  let save: jest.Mock;
+  let save: Mock;
   const registration = {
     account: 'person',
     email: 'person@example.com',
@@ -17,12 +14,12 @@ describe('UserService registration conflicts', () => {
   };
 
   beforeEach(() => {
-    save = jest.fn();
+    save = vi.fn();
     service = new UserService(
       { generate: () => 123n } as unknown as SnowflakeIdService,
       {
-        find: jest.fn().mockResolvedValue([]),
-        create: jest.fn((data) => data),
+        find: vi.fn().mockResolvedValue([]),
+        create: vi.fn((data) => data),
         save,
       } as unknown as Repository<User>,
     );

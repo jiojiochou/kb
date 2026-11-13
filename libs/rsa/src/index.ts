@@ -1,2 +1,2 @@
-export * from './rsa.module';
-export * from './rsa.service';
+export * from './rsa.module.js';
+export * from './rsa.service.js';

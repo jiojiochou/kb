@@ -28,6 +28,12 @@
 
 ## Project setup
 
+项目使用 NestJS 12，开发、构建和测试需要 **Node.js 24.15.0 或更新版本**
+（本项目使用 24.22.1）及 pnpm 11.25.0。项目和 NestJS 12 的包均采用 ESM，
+相对导入使用 `.js` 后缀，TypeScript 使用 NodeNext 模块解析。
+构建使用 Nest CLI 默认的 TypeScript 编译器，自动将 `@app/*` 库别名转换为运行时路径。
+单元测试和端到端测试使用 Vitest 4 / Vite 8，代码检查使用 Oxlint。
+
 ```bash
 $ pnpm install
 ```
@@ -44,6 +50,9 @@ $ pnpm run start:dev
 # production mode
 $ pnpm run start:prod
 ```
+
+构建入口为 `dist/src/main.js`；`pnpm run start:prod` 使用该入口。
+应用继续使用 Express 适配器，以支持现有的 session 和 Passport 登录流程。
 
 ## 邮箱验证码发送限制
 
@@ -75,6 +84,9 @@ $ pnpm run test:e2e
 
 # test coverage
 $ pnpm run test:cov
+
+# lint (including type-aware rules)
+$ pnpm run lint
 ```
 
 ## Deployment

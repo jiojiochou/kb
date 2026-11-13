@@ -4,10 +4,10 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { RegisterUserDto } from './dto/register-user.dto';
+import { RegisterUserDto } from './dto/register-user.dto.js';
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
 import { QueryFailedError, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User } from './entities/user.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()

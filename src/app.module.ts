@@ -1,12 +1,12 @@
 import { Module, OnApplicationBootstrap } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { LoginModule } from './login/login.module';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { LoginModule } from './login/login.module.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserModule } from './user/user.module';
-import { User } from './user/entities/user.entity';
-import { AuthModule } from './auth/auth.module';
-import { UserIdentity } from './user/entities/user-identity.entity';
+import { UserModule } from './user/user.module.js';
+import { User } from './user/entities/user.entity.js';
+import { AuthModule } from './auth/auth.module.js';
+import { UserIdentity } from './user/entities/user-identity.entity.js';
 import { RsaModule, RsaService } from '@app/rsa';
 import { ConfigModule } from '@nestjs/config';
 

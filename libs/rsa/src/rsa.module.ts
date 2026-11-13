@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RsaService } from './rsa.service';
+import { RsaService } from './rsa.service.js';
 
 @Module({
   providers: [RsaService],

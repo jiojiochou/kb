@@ -1,21 +1,21 @@
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '@app/redis';
-import { VerificationCodeStore } from './verification-code-store.service';
+import { VerificationCodeStore } from './verification-code-store.service.js';
 
 describe('VerificationCodeStore sending quota', () => {
   const transaction = {
-    incr: jest.fn().mockReturnThis(),
-    expire: jest.fn().mockReturnThis(),
-    exec: jest.fn(),
+    incr: vi.fn().mockReturnThis(),
+    expire: vi.fn().mockReturnThis(),
+    exec: vi.fn(),
   };
-  const setCode = jest.fn();
-  const multi = jest.fn().mockReturnValue(transaction);
+  const setCode = vi.fn();
+  const multi = vi.fn().mockReturnValue(transaction);
   const redisService = {
     client: { multi, set: setCode },
   } as unknown as RedisService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     transaction.exec.mockReset().mockResolvedValue([
       [null, 1],
       [null, 1],
@@ -188,7 +188,7 @@ describe('VerificationCodeStore sending quota', () => {
 });
 
 describe('VerificationCodeStore conditional consumption', () => {
-  const evalScript = jest.fn();
+  const evalScript = vi.fn();
   let store: VerificationCodeStore;
 
   beforeEach(() => {

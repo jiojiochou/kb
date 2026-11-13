@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { RedisModule } from './redis.module';
-import { RedisService } from './redis.service';
+import { RedisModule } from './redis.module.js';
+import { RedisService } from './redis.service.js';
 
 @Module({
   imports: [RedisModule],
@@ -27,7 +27,7 @@ describe('RedisModule', () => {
       .useValue(new ConfigService({}))
       .compile();
     const service = module.get(RedisService);
-    const disconnect = jest.spyOn(service.client, 'disconnect');
+    const disconnect = vi.spyOn(service.client, 'disconnect');
 
     try {
       expect(module.get(FirstConsumerModule).redis).toBe(service);

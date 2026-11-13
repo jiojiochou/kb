@@ -7,10 +7,12 @@ import {
   Session,
   UseGuards,
 } from '@nestjs/common';
-import { LoginService } from './login.service';
-import { LoginDto } from './dto/login.dto';
+import { LoginService } from './login.service.js';
+import { LoginDto } from './dto/login.dto.js';
 import { AuthGuard } from '@nestjs/passport';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service.js';
+import type { Request } from 'express';
+import type { SessionData } from 'express-session';
 
 @Controller('login')
 export class LoginController {
@@ -20,7 +22,10 @@ export class LoginController {
   ) {}
 
   @Post()
-  async login(@Body() loginDto: LoginDto, @Session() session) {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Session() session: SessionData & { user?: unknown },
+  ) {
     const user = await this.loginService.login(loginDto);
     session.user = user;
 
@@ -33,7 +38,10 @@ export class LoginController {
 
   @Get('callback/google')
   @UseGuards(AuthGuard('google'))
-  async googleLoginRedirect(@Req() req, @Session() session) {}
+  async googleLoginRedirect(
+    @Req() _req: Request,
+    @Session() _session: SessionData,
+  ) {}
 
   @Get('github')
   @UseGuards(AuthGuard('github'))
@@ -43,5 +51,8 @@ export class LoginController {
 
   @Get('callback/github')
   @UseGuards(AuthGuard('github'))
-  async githubLoginRedirect(@Req() req, @Session() session) {}
+  async githubLoginRedirect(
+    @Req() _req: Request,
+    @Session() _session: SessionData,
+  ) {}
 }

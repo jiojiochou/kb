@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { LoginService } from './login.service';
-import { LoginController } from './login.controller';
-import { GoogleStrategy } from './google.strategy';
-import { GithubStrategy } from './github.strategy';
-import { UserModule } from 'src/user/user.module';
+import { LoginService } from './login.service.js';
+import { LoginController } from './login.controller.js';
+import { GoogleStrategy } from './google.strategy.js';
+import { GithubStrategy } from './github.strategy.js';
+import { UserModule } from '../user/user.module.js';
 
 @Module({
   imports: [UserModule],

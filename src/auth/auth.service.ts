@@ -7,10 +7,10 @@ import {
 } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import nodemailer from 'nodemailer';
-import { SendEmailVerificationCodeDto } from './dto/send-email-verification-code.dto';
+import { SendEmailVerificationCodeDto } from './dto/send-email-verification-code.dto.js';
 import { ConfigService } from '@nestjs/config';
-import { VerifyEmailDto } from './dto/verify-email.dto';
-import { VerificationCodeStore } from './verification-code-store.service';
+import { VerifyEmailDto } from './dto/verify-email.dto.js';
+import { VerificationCodeStore } from './verification-code-store.service.js';
 
 @Injectable()
 export class AuthService {

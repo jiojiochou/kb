@@ -1,1 +1,1 @@
-export * from './trim.decorator';
+export * from './trim.decorator.js';

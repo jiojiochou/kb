@@ -1,5 +1,5 @@
 import { PickType } from '@nestjs/mapped-types';
-import { SendEmailVerificationCodeDto } from './send-email-verification-code.dto';
+import { SendEmailVerificationCodeDto } from './send-email-verification-code.dto.js';
 import { IsString, Matches } from 'class-validator';
 import { Trim } from '@app/decorators';
 

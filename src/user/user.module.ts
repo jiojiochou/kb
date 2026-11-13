@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UserController } from './user.controller';
+import { UserService } from './user.service.js';
+import { UserController } from './user.controller.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
+import { User } from './entities/user.entity.js';
 import { SnowflakeIdModule } from '@street-devs/nest-snowflake-id';
-import { UserIdentity } from './entities/user-identity.entity';
+import { UserIdentity } from './entities/user-identity.entity.js';
 
 @Module({
   imports: [
