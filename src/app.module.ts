@@ -6,7 +6,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module.js';
 import { User } from './user/entities/user.entity.js';
 import { AuthModule } from './auth/auth.module.js';
-import { UserIdentity } from './user/entities/user-identity.entity.js';
 import { RsaModule, RsaService } from '@app/rsa';
 import { ConfigModule } from '@nestjs/config';
 
@@ -26,7 +25,7 @@ import { ConfigModule } from '@nestjs/config';
       database: 'kb',
       synchronize: true, // 自动根据实体创建表
       logging: true, // 控制台sql日志
-      entities: [User, UserIdentity],
+      entities: [User],
       poolSize: 10,
     }),
     RsaModule,
