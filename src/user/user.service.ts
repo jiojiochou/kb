@@ -90,13 +90,17 @@ export class UserService {
     }
   }
 
+  /** 查询有效用户的指定页；超过末页时返回空列表，仍保留实际总数。 */
   async findUsers({ page, pageSize }: QueryUsersDto) {
     const skip = (page - 1) * pageSize;
+    // 页码和每页条数分别合法时，乘积仍可能超出安全整数范围。
     if (!Number.isSafeInteger(skip)) {
       throw new BadRequestException('分页偏移量超出有效范围');
     }
 
+    // TypeORM 默认排除软删除用户；列表和总数使用相同的有效用户范围。
     const [items, total] = await this.userRepository.findAndCount({
+      // 显式选择对外资料，避免把密码等内部字段带入列表响应。
       select: {
         id: true,
         account: true,
@@ -109,6 +113,7 @@ export class UserService {
         createTime: true,
         updateTime: true,
       },
+      // 创建时间相同时用唯一 ID 排序，保持翻页顺序确定。
       order: { createTime: 'DESC', id: 'DESC' },
       skip,
       take: pageSize,
@@ -139,11 +144,13 @@ export class UserService {
     return await this.userRepository.findOneBy({ email: normalizedEmail });
   }
 
+  /** 按账号更新有效用户资料；邮箱唯一性由数据库约束保证，包含已删除账户。 */
   async updateUser(account: string, updateUserDto: UpdateUserDto) {
     const normalizedAccount = account?.trim();
     if (!normalizedAccount) {
       throw new BadRequestException('account不能为空');
     }
+    // 只提取允许修改的字段；undefined 保留原值，null 用于清空可空资料。
     const changes: UpdateUserDto = {};
     for (const field of [
       'email',
@@ -162,6 +169,7 @@ export class UserService {
     }
 
     try {
+      // 只写入本次提交的字段，避免覆盖其他资料；同时排除已软删除账户。
       const updated = await this.userRepository.update(
         { account: normalizedAccount, deleteTime: IsNull() },
         changes,
@@ -178,6 +186,7 @@ export class UserService {
           code?: string;
           constraint?: string;
         };
+        // 将邮箱唯一约束冲突（包括并发更新）转换为业务上的邮箱占用提示。
         if (code === '23505' && constraint === 'uq_user_email') {
           throw new ConflictException('邮箱已被注册');
         }
@@ -185,12 +194,14 @@ export class UserService {
       throw new InternalServerErrorException();
     }
 
+    // 重新读取数据库中的资料和自动更新的时间；若此时已被删除，则返回 404。
     const user = await this.userRepository.findOneBy({
       account: normalizedAccount,
     });
     if (!user) {
       throw new NotFoundException('账号不存在或已被删除');
     }
+    // 对外响应不包含密码及软删除标记。
     const { password: _, deleteTime: __, ...result } = user;
     return result;
   }
