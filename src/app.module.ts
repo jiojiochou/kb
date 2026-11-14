@@ -8,6 +8,9 @@ import { User } from './user/entities/user.entity.js';
 import { AuthModule } from './auth/auth.module.js';
 import { RsaModule, RsaService } from '@app/rsa';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 
 @Module({
   imports: [
@@ -34,7 +37,12 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // 统一所有接口的成功和失败响应结构为 { code, message, data }。
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+  ],
 })
 export class AppModule implements OnApplicationBootstrap {
   constructor(private readonly rsaService: RsaService) {}

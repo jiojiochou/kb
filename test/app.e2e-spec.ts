@@ -56,7 +56,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect({ code: 200, message: 'success', data: 'Hello World!' });
   });
 
   it('registers through the Express adapter and excludes the password', async () => {
@@ -70,10 +70,11 @@ describe('AppController (e2e)', () => {
       .expect(201);
 
     expect(response.body).toMatchObject({
-      account: 'user.name-1',
-      email: 'person@example.com',
+      code: 201,
+      message: 'success',
+      data: { account: 'user.name-1', email: 'person@example.com' },
     });
-    expect(response.body).not.toHaveProperty('password');
+    expect(response.body.data).not.toHaveProperty('password');
   });
 
   it('rejects an invalid account before accessing the database', async () => {
@@ -99,11 +100,9 @@ describe('AppController (e2e)', () => {
       .expect(200);
 
     expect(response.body).toEqual({
-      items: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
+      code: 200,
+      message: 'success',
+      data: { items: [], total: 0, page: 1, pageSize: 10, totalPages: 0 },
     });
     expect(repository.findAndCount).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 0, take: 10 }),
@@ -121,11 +120,9 @@ describe('AppController (e2e)', () => {
       .expect(200);
 
     expect(response.body).toEqual({
-      items,
-      total: 21,
-      page: 2,
-      pageSize: 10,
-      totalPages: 3,
+      code: 200,
+      message: 'success',
+      data: { items, total: 21, page: 2, pageSize: 10, totalPages: 3 },
     });
     expect(repository.findAndCount).toHaveBeenLastCalledWith(
       expect.objectContaining({ skip: 10, take: 10 }),
@@ -150,13 +147,17 @@ describe('AppController (e2e)', () => {
       .expect(200);
 
     expect(response.body).toEqual({
-      id: '123',
-      account: 'person',
-      email: 'person@example.com',
-      displayName: 'New name',
-      firstName: 'Jane',
+      code: 200,
+      message: 'success',
+      data: {
+        id: '123',
+        account: 'person',
+        email: 'person@example.com',
+        displayName: 'New name',
+        firstName: 'Jane',
+      },
     });
-    expect(response.body).not.toHaveProperty('password');
+    expect(response.body.data).not.toHaveProperty('password');
     expect(repository.update).toHaveBeenLastCalledWith(
       { account: 'person', deleteTime: IsNull() },
       { displayName: 'New name', firstName: 'Jane' },
@@ -182,7 +183,11 @@ describe('AppController (e2e)', () => {
       .send({ displayName: 'Name' })
       .expect(404);
 
-    expect(response.body.message).toBe('账号不存在或已被删除');
+    expect(response.body).toEqual({
+      code: 404,
+      message: '账号不存在或已被删除',
+      data: null,
+    });
   });
 
   it.each([
@@ -275,7 +280,11 @@ describe('AppController (e2e)', () => {
       .delete('/user/missing')
       .expect(404);
 
-    expect(response.body.message).toBe('账号不存在或已被删除');
+    expect(response.body).toEqual({
+      code: 404,
+      message: '账号不存在或已被删除',
+      data: null,
+    });
   });
 
   it('rejects a blank account before accessing the database', async () => {
