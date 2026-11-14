@@ -99,6 +99,24 @@ curl "http://localhost:3000/user?page=2&pageSize=10"
 `total` 为未软删除用户总数，`totalPages` 为总页数，无数据时为 `0`。
 请求超过末页时返回空列表，仍保留实际总数。接口沿用用户模块当前的无鉴权方式。
 
+## 更新用户信息
+
+`PATCH /user/:account` 按账号部分更新用户资料，支持 `email`、`displayName`、
+`firstName`、`lastName` 和 `avatar`，未传入的字段保持原值。昵称、姓名和头像
+可传 `null` 清空；邮箱不能为 `null`，邮箱唯一约束包含已软删除的账户。
+账号、密码和系统字段不参与更新，未知字段沿用全局白名单配置被忽略。
+
+```bash
+curl -X PATCH "http://localhost:3000/user/user.name-1" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"新昵称","firstName":"小明"}'
+```
+
+成功返回 HTTP 200 和更新后的用户资料，不包含密码和删除时间。
+账号首尾空格会被去除；空账号、非法字段值或未提供任何可更新字段返回 HTTP 400，
+账号不存在或已软删除返回 HTTP 404，邮箱冲突返回 HTTP 409。
+接口沿用用户模块当前的无鉴权方式。
+
 ## 账户软删除
 
 调试接口为 `DELETE /user/:account`，例如：

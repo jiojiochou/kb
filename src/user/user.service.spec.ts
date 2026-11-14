@@ -4,6 +4,94 @@ import type { Mock } from 'vitest';
 import { User } from './entities/user.entity.js';
 import { UserService } from './user.service.js';
 
+describe('UserService updates', () => {
+  let service: UserService;
+  let findOneBy: Mock;
+  let update: Mock;
+
+  beforeEach(() => {
+    findOneBy = vi.fn();
+    update = vi.fn().mockResolvedValue({ affected: 1 });
+    service = new UserService(
+      {} as SnowflakeIdService,
+      { findOneBy, update } as unknown as Repository<User>,
+    );
+  });
+
+  it('updates profile fields and excludes sensitive fields from the response', async () => {
+    const user = {
+      id: '123',
+      account: 'person',
+      email: 'person@example.com',
+      displayName: 'New name',
+      firstName: 'Jane',
+      password: 'secret',
+      deleteTime: null,
+    } as User;
+    findOneBy.mockResolvedValue(user);
+
+    await expect(
+      service.updateUser(' person ', {
+        displayName: 'New name',
+        firstName: 'Jane',
+      }),
+    ).resolves.toEqual({
+      id: '123',
+      account: 'person',
+      email: 'person@example.com',
+      displayName: 'New name',
+      firstName: 'Jane',
+    });
+    expect(findOneBy).toHaveBeenCalledExactlyOnceWith({ account: 'person' });
+    expect(update).toHaveBeenCalledExactlyOnceWith(
+      { account: 'person', deleteTime: IsNull() },
+      { displayName: 'New name', firstName: 'Jane' },
+    );
+    expect(user.password).toBe('secret');
+  });
+
+  it('rejects an empty update payload', async () => {
+    await expect(service.updateUser('person', {})).rejects.toMatchObject({
+      status: 400,
+      message: '至少提供一个需要更新的字段',
+    });
+    expect(findOneBy).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the account does not exist', async () => {
+    update.mockResolvedValue({ affected: 0 });
+
+    await expect(
+      service.updateUser('missing', { displayName: 'Name' }),
+    ).rejects.toMatchObject({ status: 404, message: '账号不存在或已被删除' });
+    expect(findOneBy).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the new email is already registered', async () => {
+    update.mockRejectedValue(
+      new QueryFailedError(
+        'UPDATE "user"',
+        [],
+        Object.assign(new Error('unique violation'), {
+          code: '23505',
+          constraint: 'uq_user_email',
+        }),
+      ),
+    );
+
+    await expect(
+      service.updateUser('person', { email: 'other@example.com' }),
+    ).rejects.toMatchObject({ status: 409, message: '邮箱已被注册' });
+  });
+
+  it.each(['', '   '])('rejects a blank account: %j', async (account) => {
+    await expect(
+      service.updateUser(account, { displayName: 'Name' }),
+    ).rejects.toMatchObject({ status: 400, message: 'account不能为空' });
+    expect(findOneBy).not.toHaveBeenCalled();
+  });
+});
+
 describe('UserService pagination', () => {
   let service: UserService;
   let findAndCount: Mock;

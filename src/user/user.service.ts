@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto.js';
 import { QueryUsersDto } from './dto/query-users.dto.js';
+import { UpdateUserDto } from './dto/update-user.dto.js';
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
 import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
@@ -136,6 +137,62 @@ export class UserService {
       throw new BadRequestException('email不能为空');
     }
     return await this.userRepository.findOneBy({ email: normalizedEmail });
+  }
+
+  async updateUser(account: string, updateUserDto: UpdateUserDto) {
+    const normalizedAccount = account?.trim();
+    if (!normalizedAccount) {
+      throw new BadRequestException('account不能为空');
+    }
+    const changes: UpdateUserDto = {};
+    for (const field of [
+      'email',
+      'displayName',
+      'firstName',
+      'lastName',
+      'avatar',
+    ] as const) {
+      const value = updateUserDto[field];
+      if (value !== undefined) {
+        Object.assign(changes, { [field]: value });
+      }
+    }
+    if (Object.keys(changes).length === 0) {
+      throw new BadRequestException('至少提供一个需要更新的字段');
+    }
+
+    try {
+      const updated = await this.userRepository.update(
+        { account: normalizedAccount, deleteTime: IsNull() },
+        changes,
+      );
+      if (!updated.affected) {
+        throw new NotFoundException('账号不存在或已被删除');
+      }
+    } catch (e) {
+      if (e instanceof NotFoundException) {
+        throw e;
+      }
+      if (e instanceof QueryFailedError) {
+        const { code, constraint } = e.driverError as {
+          code?: string;
+          constraint?: string;
+        };
+        if (code === '23505' && constraint === 'uq_user_email') {
+          throw new ConflictException('邮箱已被注册');
+        }
+      }
+      throw new InternalServerErrorException();
+    }
+
+    const user = await this.userRepository.findOneBy({
+      account: normalizedAccount,
+    });
+    if (!user) {
+      throw new NotFoundException('账号不存在或已被删除');
+    }
+    const { password: _, deleteTime: __, ...result } = user;
+    return result;
   }
 
   async softDeleteUserByAccount(account: string): Promise<void> {

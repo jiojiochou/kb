@@ -11,6 +11,8 @@ describe('AppController (e2e)', () => {
   const repository = {
     find: vi.fn().mockResolvedValue([]),
     findAndCount: vi.fn().mockResolvedValue([[], 0]),
+    findOneBy: vi.fn(),
+    update: vi.fn().mockResolvedValue({ affected: 1 }),
     create: vi.fn((data) => data),
     save: vi.fn(async (data) => data),
     softDelete: vi.fn().mockResolvedValue({ affected: 1 }),
@@ -127,6 +129,105 @@ describe('AppController (e2e)', () => {
     });
     expect(repository.findAndCount).toHaveBeenLastCalledWith(
       expect.objectContaining({ skip: 10, take: 10 }),
+    );
+  });
+
+  it('updates user profile fields through PATCH /user/:account', async () => {
+    const user = {
+      id: '123',
+      account: 'person',
+      email: 'person@example.com',
+      displayName: 'New name',
+      firstName: 'Jane',
+      password: 'secret',
+      deleteTime: null,
+    };
+    repository.findOneBy.mockResolvedValueOnce(user);
+
+    const response = await request(app.getHttpServer())
+      .patch('/user/person')
+      .send({ displayName: 'New name', firstName: 'Jane' })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      id: '123',
+      account: 'person',
+      email: 'person@example.com',
+      displayName: 'New name',
+      firstName: 'Jane',
+    });
+    expect(response.body).not.toHaveProperty('password');
+    expect(repository.update).toHaveBeenLastCalledWith(
+      { account: 'person', deleteTime: IsNull() },
+      { displayName: 'New name', firstName: 'Jane' },
+    );
+  });
+
+  it('rejects an empty update body before querying', async () => {
+    repository.findOneBy.mockClear();
+
+    await request(app.getHttpServer())
+      .patch('/user/person')
+      .send({})
+      .expect(400);
+
+    expect(repository.findOneBy).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when updating an unknown account', async () => {
+    repository.update.mockResolvedValueOnce({ affected: 0 });
+
+    const response = await request(app.getHttpServer())
+      .patch('/user/missing')
+      .send({ displayName: 'Name' })
+      .expect(404);
+
+    expect(response.body.message).toBe('账号不存在或已被删除');
+  });
+
+  it.each([
+    { email: null },
+    { email: 'invalid' },
+    { displayName: '   ' },
+    { firstName: 123 },
+    { lastName: 'a'.repeat(51) },
+    { avatar: 'invalid' },
+    { account: 'other', password: 'new-password', deleteTime: null },
+  ])(
+    'rejects an invalid update before accessing the database: %j',
+    async (body) => {
+      repository.update.mockClear();
+
+      await request(app.getHttpServer())
+        .patch('/user/person')
+        .send(body)
+        .expect(400);
+
+      expect(repository.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('trims names, clears nullable fields, and ignores protected fields', async () => {
+    repository.findOneBy.mockResolvedValueOnce({
+      account: 'person',
+      displayName: 'New name',
+      avatar: null,
+    });
+
+    await request(app.getHttpServer())
+      .patch('/user/person')
+      .send({
+        displayName: ' New name ',
+        avatar: null,
+        account: 'other',
+        password: 'new-password',
+        deleteTime: null,
+      })
+      .expect(200);
+
+    expect(repository.update).toHaveBeenLastCalledWith(
+      { account: 'person', deleteTime: IsNull() },
+      { displayName: 'New name', avatar: null },
     );
   });
 

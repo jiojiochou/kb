@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Param,
   Post,
   Query,
@@ -12,6 +13,7 @@ import {
 import { UserService } from './user.service.js';
 import { RegisterUserDto } from './dto/register-user.dto.js';
 import { QueryUsersDto } from './dto/query-users.dto.js';
+import { UpdateUserDto } from './dto/update-user.dto.js';
 
 @Controller('user')
 export class UserController {
@@ -31,6 +33,14 @@ export class UserController {
   async checkAccount(@Query('account') account: string) {
     const exists = await this.userService.isAccountTaken(account);
     return { account, exists };
+  }
+
+  @Patch(':account')
+  async updateUser(
+    @Param('account') account: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return await this.userService.updateUser(account, updateUserDto);
   }
 
   @Delete(':account')
