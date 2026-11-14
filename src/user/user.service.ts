@@ -3,10 +3,12 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto.js';
+import { QueryUsersDto } from './dto/query-users.dto.js';
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
-import { QueryFailedError, Repository } from 'typeorm';
+import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -32,6 +34,8 @@ export class UserService {
      * 找account===RegisterUserDto.account || email === RegisterUserDto.email
      */
     const findUsers = await this.userRepository.find({
+      // 软删除后仍保留账号和邮箱，查重范围与数据库唯一约束一致。
+      withDeleted: true,
       select: {
         account: true,
         email: true,
@@ -85,6 +89,39 @@ export class UserService {
     }
   }
 
+  async findUsers({ page, pageSize }: QueryUsersDto) {
+    const skip = (page - 1) * pageSize;
+    if (!Number.isSafeInteger(skip)) {
+      throw new BadRequestException('分页偏移量超出有效范围');
+    }
+
+    const [items, total] = await this.userRepository.findAndCount({
+      select: {
+        id: true,
+        account: true,
+        email: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        lastLoginTime: true,
+        createTime: true,
+        updateTime: true,
+      },
+      order: { createTime: 'DESC', id: 'DESC' },
+      skip,
+      take: pageSize,
+    });
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
   async findUserByAccount(account: string): Promise<User | null> {
     const normalizedAccount = account?.trim();
     if (!normalizedAccount) {
@@ -101,10 +138,28 @@ export class UserService {
     return await this.userRepository.findOneBy({ email: normalizedEmail });
   }
 
+  async softDeleteUserByAccount(account: string): Promise<void> {
+    const normalizedAccount = account?.trim();
+    if (!normalizedAccount) {
+      throw new BadRequestException('account不能为空');
+    }
+
+    const result = await this.userRepository.softDelete({
+      account: normalizedAccount,
+      deleteTime: IsNull(),
+    });
+    if (!result.affected) {
+      throw new NotFoundException('账号不存在或已被删除');
+    }
+  }
+
   async isAccountTaken(account: string) {
     if (!account) {
       throw new BadRequestException('account不能为空');
     }
-    return await this.userRepository.existsBy({ account });
+    return await this.userRepository.exists({
+      where: { account },
+      withDeleted: true,
+    });
   }
 }

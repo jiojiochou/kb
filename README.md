@@ -73,6 +73,52 @@ $ pnpm run start:prod
 验证码错误、过期或已使用返回 HTTP 400；错误验证码不会删除当前有效验证码。
 Redis 异常返回 HTTP 500。此接口仅校验验证码，不修改用户信息或创建登录会话。
 
+## 分页查询用户
+
+`GET /user?page=1&pageSize=10` 查询未软删除的用户，按创建时间、ID 倒序排列。
+`page` 默认 `1`，`pageSize` 默认 `10`，均为正整数，每页最多 `100` 条。
+非法参数或超出安全整数范围的分页偏移量返回 HTTP 400。
+
+```bash
+curl "http://localhost:3000/user?page=2&pageSize=10"
+```
+
+返回 HTTP 200，响应结构为：
+
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 2,
+  "pageSize": 10,
+  "totalPages": 0
+}
+```
+
+`items` 包含用户基本资料和创建、更新时间，不包含密码及删除时间。
+`total` 为未软删除用户总数，`totalPages` 为总页数，无数据时为 `0`。
+请求超过末页时返回空列表，仍保留实际总数。接口沿用用户模块当前的无鉴权方式。
+
+## 账户软删除
+
+调试接口为 `DELETE /user/:account`，例如：
+
+```bash
+curl -i -X DELETE "http://localhost:3000/user/user.name-1"
+```
+
+将 `user.name-1` 替换为实际账号。成功返回 HTTP 204，无响应体。
+此接口当前未加鉴权，供本地调试使用。
+
+服务层提供 `UserService.softDeleteUserByAccount(account)`，按账号软删除账户，
+成功时返回 `void`。账号首尾空格会被去除，空账号返回 HTTP 400，
+账号不存在或已被删除返回 HTTP 404。
+
+删除使用 TypeORM 的 `DeleteDateColumn` 和 `softDelete`，在 `user.delete_time`
+记录删除时间并保留原始数据。普通账户和邮箱查询会自动排除已删除账户；
+注册查重及账号占用检查仍包含已删除账户，账号和邮箱不能重复注册。
+当前项目启用了 `synchronize: true`，启动时会自动同步新增字段。
+
 ## Run tests
 
 ```bash

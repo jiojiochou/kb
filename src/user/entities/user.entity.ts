@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   PrimaryColumn,
   Unique,
@@ -94,4 +95,11 @@ export class User {
     comment: '更新时间',
   })
   updateTime: Date;
+
+  @DeleteDateColumn({
+    type: 'timestamptz',
+    name: 'delete_time',
+    comment: '删除时间',
+  })
+  deleteTime: Date | null;
 }

@@ -1,11 +1,81 @@
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
-import { QueryFailedError, Repository } from 'typeorm';
+import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import type { Mock } from 'vitest';
 import { User } from './entities/user.entity.js';
 import { UserService } from './user.service.js';
 
+describe('UserService pagination', () => {
+  let service: UserService;
+  let findAndCount: Mock;
+
+  beforeEach(() => {
+    findAndCount = vi.fn().mockResolvedValue([[], 0]);
+    service = new UserService(
+      {} as SnowflakeIdService,
+      { findAndCount } as unknown as Repository<User>,
+    );
+  });
+
+  it('returns the requested page and total count with stable ordering', async () => {
+    const items = [{ id: '123', account: 'person' }];
+    findAndCount.mockResolvedValue([items, 25]);
+
+    await expect(service.findUsers({ page: 2, pageSize: 10 })).resolves.toEqual(
+      {
+        items,
+        total: 25,
+        page: 2,
+        pageSize: 10,
+        totalPages: 3,
+      },
+    );
+    expect(findAndCount).toHaveBeenCalledExactlyOnceWith({
+      select: {
+        id: true,
+        account: true,
+        email: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        lastLoginTime: true,
+        createTime: true,
+        updateTime: true,
+      },
+      order: { createTime: 'DESC', id: 'DESC' },
+      skip: 10,
+      take: 10,
+    });
+  });
+
+  it.each([0, 15])(
+    'returns an empty page while preserving total %i',
+    async (total) => {
+      findAndCount.mockResolvedValue([[], total]);
+
+      await expect(
+        service.findUsers({ page: 3, pageSize: 10 }),
+      ).resolves.toEqual({
+        items: [],
+        total,
+        page: 3,
+        pageSize: 10,
+        totalPages: Math.ceil(total / 10),
+      });
+    },
+  );
+
+  it('rejects offsets that exceed the safe integer range', async () => {
+    await expect(
+      service.findUsers({ page: Number.MAX_SAFE_INTEGER, pageSize: 100 }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(findAndCount).not.toHaveBeenCalled();
+  });
+});
+
 describe('UserService registration conflicts', () => {
   let service: UserService;
+  let find: Mock;
   let save: Mock;
   const registration = {
     account: 'person',
@@ -14,15 +84,35 @@ describe('UserService registration conflicts', () => {
   };
 
   beforeEach(() => {
+    find = vi.fn().mockResolvedValue([]);
     save = vi.fn();
     service = new UserService(
       { generate: () => 123n } as unknown as SnowflakeIdService,
       {
-        find: vi.fn().mockResolvedValue([]),
+        find,
         create: vi.fn((data) => data),
         save,
       } as unknown as Repository<User>,
     );
+  });
+
+  it.each([
+    [
+      { account: registration.account, email: 'other@example.com' },
+      '账号已被注册',
+    ],
+    [{ account: 'other', email: registration.email }, '邮箱已被注册'],
+  ])('keeps deleted registrations reserved: %s', async (user, message) => {
+    find.mockResolvedValue([{ ...user, deleteTime: new Date() }]);
+
+    await expect(service.registerUser(registration)).rejects.toMatchObject({
+      status: 409,
+      message,
+    });
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({ withDeleted: true }),
+    );
+    expect(save).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -68,6 +158,84 @@ describe('UserService registration conflicts', () => {
 
     await expect(service.registerUser(registration)).rejects.toMatchObject({
       status: 500,
+    });
+  });
+});
+
+describe('UserService soft deletion', () => {
+  let service: UserService;
+  let softDelete: Mock;
+  let exists: Mock;
+
+  beforeEach(() => {
+    softDelete = vi.fn().mockResolvedValue({ affected: 1 });
+    exists = vi.fn().mockResolvedValue(true);
+    service = new UserService(
+      {} as SnowflakeIdService,
+      { softDelete, exists } as unknown as Repository<User>,
+    );
+  });
+
+  it('soft deletes an active account after trimming whitespace', async () => {
+    await expect(
+      service.softDeleteUserByAccount(' person '),
+    ).resolves.toBeUndefined();
+    expect(softDelete).toHaveBeenCalledExactlyOnceWith({
+      account: 'person',
+      deleteTime: IsNull(),
+    });
+  });
+
+  it.each(['', '   '])('rejects an empty account: %j', async (account) => {
+    await expect(
+      service.softDeleteUserByAccount(account),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'account不能为空',
+    });
+    expect(softDelete).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for a missing or already deleted account', async () => {
+    softDelete.mockResolvedValue({ affected: 0 });
+
+    await expect(
+      service.softDeleteUserByAccount('person'),
+    ).rejects.toMatchObject({
+      status: 404,
+      message: '账号不存在或已被删除',
+    });
+  });
+
+  it('preserves the first deletion timestamp on repeated deletion', async () => {
+    softDelete
+      .mockResolvedValueOnce({ affected: 1 })
+      .mockResolvedValueOnce({ affected: 0 });
+
+    await service.softDeleteUserByAccount('person');
+    await expect(
+      service.softDeleteUserByAccount('person'),
+    ).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(softDelete).toHaveBeenNthCalledWith(2, {
+      account: 'person',
+      deleteTime: IsNull(),
+    });
+  });
+
+  it('propagates database failures', async () => {
+    const error = new Error('database unavailable');
+    softDelete.mockRejectedValue(error);
+
+    await expect(service.softDeleteUserByAccount('person')).rejects.toBe(error);
+  });
+
+  it('includes deleted accounts in availability checks', async () => {
+    await expect(service.isAccountTaken('person')).resolves.toBe(true);
+    expect(exists).toHaveBeenCalledWith({
+      where: { account: 'person' },
+      withDeleted: true,
     });
   });
 });

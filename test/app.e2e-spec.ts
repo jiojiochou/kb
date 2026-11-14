@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
 import { RsaService } from '@app/rsa';
 import request from 'supertest';
 import { AppModule } from './../src/app.module.js';
@@ -10,8 +10,10 @@ describe('AppController (e2e)', () => {
   let app: INestApplication;
   const repository = {
     find: vi.fn().mockResolvedValue([]),
+    findAndCount: vi.fn().mockResolvedValue([[], 0]),
     create: vi.fn((data) => data),
     save: vi.fn(async (data) => data),
+    softDelete: vi.fn().mockResolvedValue({ affected: 1 }),
   };
 
   beforeAll(async () => {
@@ -85,5 +87,101 @@ describe('AppController (e2e)', () => {
       .expect(400);
 
     expect(repository.find).not.toHaveBeenCalled();
+  });
+
+  it('uses default pagination for GET /user', async () => {
+    repository.findAndCount.mockClear();
+
+    const response = await request(app.getHttpServer())
+      .get('/user')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      totalPages: 0,
+    });
+    expect(repository.findAndCount).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 10 }),
+    );
+  });
+
+  it('transforms pagination query strings and returns user data', async () => {
+    const items = [
+      { id: '123', account: 'person', email: 'person@example.com' },
+    ];
+    repository.findAndCount.mockResolvedValueOnce([items, 21]);
+
+    const response = await request(app.getHttpServer())
+      .get('/user?page=2&pageSize=10')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      items,
+      total: 21,
+      page: 2,
+      pageSize: 10,
+      totalPages: 3,
+    });
+    expect(repository.findAndCount).toHaveBeenLastCalledWith(
+      expect.objectContaining({ skip: 10, take: 10 }),
+    );
+  });
+
+  it.each([
+    'page=0',
+    'page=-1',
+    'page=1.5',
+    'page=abc',
+    'page=',
+    'page=1&page=2',
+    'page=9007199254740992',
+    'page=9007199254740991&pageSize=100',
+    'pageSize=0',
+    'pageSize=101',
+    'pageSize=1.5',
+    'pageSize=abc',
+    'pageSize=',
+    'pageSize=1&pageSize=2',
+  ])('rejects invalid pagination before querying: %s', async (query) => {
+    repository.findAndCount.mockClear();
+
+    await request(app.getHttpServer()).get(`/user?${query}`).expect(400);
+
+    expect(repository.findAndCount).not.toHaveBeenCalled();
+  });
+
+  it('soft deletes an account through DELETE /user/:account', async () => {
+    repository.softDelete.mockClear();
+
+    const response = await request(app.getHttpServer())
+      .delete('/user/user.name-1')
+      .expect(204);
+
+    expect(response.text).toBe('');
+    expect(repository.softDelete).toHaveBeenCalledExactlyOnceWith({
+      account: 'user.name-1',
+      deleteTime: IsNull(),
+    });
+  });
+
+  it('returns 404 when the account is missing or already deleted', async () => {
+    repository.softDelete.mockResolvedValueOnce({ affected: 0 });
+
+    const response = await request(app.getHttpServer())
+      .delete('/user/missing')
+      .expect(404);
+
+    expect(response.body.message).toBe('账号不存在或已被删除');
+  });
+
+  it('rejects a blank account before accessing the database', async () => {
+    repository.softDelete.mockClear();
+
+    await request(app.getHttpServer()).delete('/user/%20').expect(400);
+
+    expect(repository.softDelete).not.toHaveBeenCalled();
   });
 });
