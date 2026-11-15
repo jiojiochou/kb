@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Patch,
   Param,
   Post,
@@ -40,6 +41,17 @@ export class UserController {
   async checkAccount(@Query('account') account: string) {
     const exists = await this.userService.isAccountTaken(account);
     return { account, exists };
+  }
+
+  /** 按账号查询有效用户资料；不存在或已删除返回 404，不返回密码和删除时间。 */
+  @Get(':account')
+  async findUserByAccount(@Param('account') account: string) {
+    const user = await this.userService.findUserByAccount(account);
+    if (!user) {
+      throw new NotFoundException('账号不存在或已被删除');
+    }
+    const { password: _, deleteTime: __, ...result } = user;
+    return result;
   }
 
   /**

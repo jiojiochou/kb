@@ -99,6 +99,14 @@ curl "http://localhost:3000/user?page=2&pageSize=10"
 `total` 为未软删除用户总数，`totalPages` 为总页数，无数据时为 `0`。
 请求超过末页时返回空列表，仍保留实际总数。接口沿用用户模块当前的无鉴权方式。
 
+## 查询单个用户
+
+`GET /user/:account` 按账号查询未软删除的用户，例如 `GET /user/user.name-1`。
+成功返回 HTTP 200，统一响应结构为 `{ code: 200, message: 'success', data: 用户资料 }`，
+不包含密码和删除时间。账号首尾空格会被去除，空白账号返回 HTTP 400，
+账号不存在或已软删除返回 HTTP 404。接口沿用用户模块当前的无鉴权方式。
+静态路由 `GET /user/check-account` 保持为账号占用检查接口。
+
 ## 更新用户信息
 
 `PATCH /user/:account` 按账号部分更新用户资料，支持 `email`、`displayName`、
