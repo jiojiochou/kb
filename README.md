@@ -83,6 +83,9 @@ Redis 异常返回 HTTP 500。此接口仅校验验证码，不修改用户信�
 curl "http://localhost:3000/user?page=2&pageSize=10"
 ```
 
+可选参数 `account` 按账号精确筛选（去除首尾空格，1～25 个字符），
+例如 `GET /user?account=user.name-1`；无匹配时返回空列表。
+
 返回 HTTP 200，响应结构为：
 
 ```json
@@ -101,44 +104,46 @@ curl "http://localhost:3000/user?page=2&pageSize=10"
 
 ## 查询单个用户
 
-`GET /user/:account` 按账号查询未软删除的用户，例如 `GET /user/user.name-1`。
+`GET /user/:id` 按用户 ID 查询未软删除的用户，例如 `GET /user/123456789012345678`。
 成功返回 HTTP 200，统一响应结构为 `{ code: 200, message: 'success', data: 用户资料 }`，
-不包含密码和删除时间。账号首尾空格会被去除，空白账号返回 HTTP 400，
-账号不存在或已软删除返回 HTTP 404。接口沿用用户模块当前的无鉴权方式。
+不包含密码和删除时间。用户 ID 为雪花 ID，超出 JS 安全整数范围，请求和响应中均使用字符串；
+ID 必须为不以 0 开头、不超过 PostgreSQL `bigint` 上限的正整数，否则返回 HTTP 400。
+用户不存在或已软删除返回 HTTP 404。按账号查找请使用 `GET /user?account=...`。
+接口沿用用户模块当前的无鉴权方式。
 静态路由 `GET /user/check-account` 保持为账号占用检查接口。
 
 ## 更新用户信息
 
-`PATCH /user/:account` 按账号部分更新用户资料，支持 `email`、`displayName`、
+`PATCH /user/:id` 按用户 ID 部分更新用户资料，支持 `email`、`displayName`、
 `firstName`、`lastName` 和 `avatar`，未传入的字段保持原值。昵称、姓名和头像
 可传 `null` 清空；邮箱不能为 `null`，邮箱唯一约束包含已软删除的账户。
 账号、密码和系统字段不参与更新，未知字段沿用全局白名单配置被忽略。
 
 ```bash
-curl -X PATCH "http://localhost:3000/user/user.name-1" \
+curl -X PATCH "http://localhost:3000/user/123456789012345678" \
   -H "Content-Type: application/json" \
   -d '{"displayName":"新昵称","firstName":"小明"}'
 ```
 
 成功返回 HTTP 200 和更新后的用户资料，不包含密码和删除时间。
-账号首尾空格会被去除；空账号、非法字段值或未提供任何可更新字段返回 HTTP 400，
-账号不存在或已软删除返回 HTTP 404，邮箱冲突返回 HTTP 409。
+非法 ID、非法字段值或未提供任何可更新字段返回 HTTP 400，
+用户不存在或已软删除返回 HTTP 404，邮箱冲突返回 HTTP 409。
 接口沿用用户模块当前的无鉴权方式。
 
 ## 账户软删除
 
-调试接口为 `DELETE /user/:account`，例如：
+调试接口为 `DELETE /user/:id`，例如：
 
 ```bash
-curl -i -X DELETE "http://localhost:3000/user/user.name-1"
+curl -i -X DELETE "http://localhost:3000/user/123456789012345678"
 ```
 
-将 `user.name-1` 替换为实际账号。成功返回 HTTP 204，无响应体。
+将 `123456789012345678` 替换为实际用户 ID。成功返回 HTTP 204，无响应体。
 此接口当前未加鉴权，供本地调试使用。
 
-服务层提供 `UserService.softDeleteUserByAccount(account)`，按账号软删除账户，
-成功时返回 `void`。账号首尾空格会被去除，空账号返回 HTTP 400，
-账号不存在或已被删除返回 HTTP 404。
+服务层提供 `UserService.softDeleteUserById(id)`，按用户 ID 软删除账户，
+成功时返回 `void`。非法 ID 在控制器参数校验阶段返回 HTTP 400，
+用户不存在或已被删除返回 HTTP 404。
 
 删除使用 TypeORM 的 `DeleteDateColumn` 和 `softDelete`，在 `user.delete_time`
 记录删除时间并保留原始数据。普通账户和邮箱查询会自动排除已删除账户；

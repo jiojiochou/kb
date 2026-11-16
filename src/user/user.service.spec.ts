@@ -31,7 +31,7 @@ describe('UserService updates', () => {
     findOneBy.mockResolvedValue(user);
 
     await expect(
-      service.updateUser(' person ', {
+      service.updateUser('123', {
         displayName: 'New name',
         firstName: 'Jane',
       }),
@@ -42,28 +42,28 @@ describe('UserService updates', () => {
       displayName: 'New name',
       firstName: 'Jane',
     });
-    expect(findOneBy).toHaveBeenCalledExactlyOnceWith({ account: 'person' });
+    expect(findOneBy).toHaveBeenCalledExactlyOnceWith({ id: '123' });
     expect(update).toHaveBeenCalledExactlyOnceWith(
-      { account: 'person', deleteTime: IsNull() },
+      { id: '123', deleteTime: IsNull() },
       { displayName: 'New name', firstName: 'Jane' },
     );
     expect(user.password).toBe('secret');
   });
 
   it('rejects an empty update payload', async () => {
-    await expect(service.updateUser('person', {})).rejects.toMatchObject({
+    await expect(service.updateUser('123', {})).rejects.toMatchObject({
       status: 400,
       message: '至少提供一个需要更新的字段',
     });
     expect(findOneBy).not.toHaveBeenCalled();
   });
 
-  it('returns 404 when the account does not exist', async () => {
+  it('returns 404 when the user does not exist', async () => {
     update.mockResolvedValue({ affected: 0 });
 
     await expect(
-      service.updateUser('missing', { displayName: 'Name' }),
-    ).rejects.toMatchObject({ status: 404, message: '账号不存在或已被删除' });
+      service.updateUser('999', { displayName: 'Name' }),
+    ).rejects.toMatchObject({ status: 404, message: '用户不存在或已被删除' });
     expect(findOneBy).not.toHaveBeenCalled();
   });
 
@@ -80,15 +80,8 @@ describe('UserService updates', () => {
     );
 
     await expect(
-      service.updateUser('person', { email: 'other@example.com' }),
+      service.updateUser('123', { email: 'other@example.com' }),
     ).rejects.toMatchObject({ status: 409, message: '邮箱已被注册' });
-  });
-
-  it.each(['', '   '])('rejects a blank account: %j', async (account) => {
-    await expect(
-      service.updateUser(account, { displayName: 'Name' }),
-    ).rejects.toMatchObject({ status: 400, message: 'account不能为空' });
-    expect(findOneBy).not.toHaveBeenCalled();
   });
 });
 
@@ -130,10 +123,18 @@ describe('UserService pagination', () => {
         createTime: true,
         updateTime: true,
       },
+      where: {},
       order: { createTime: 'DESC', id: 'DESC' },
       skip: 10,
       take: 10,
     });
+  });
+
+  it('filters by account when provided', async () => {
+    await service.findUsers({ page: 1, pageSize: 10, account: 'person' });
+    expect(findAndCount).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { account: 'person' } }),
+    );
   });
 
   it.each([0, 15])(
@@ -264,34 +265,20 @@ describe('UserService soft deletion', () => {
     );
   });
 
-  it('soft deletes an active account after trimming whitespace', async () => {
-    await expect(
-      service.softDeleteUserByAccount(' person '),
-    ).resolves.toBeUndefined();
+  it('soft deletes an active user by id', async () => {
+    await expect(service.softDeleteUserById('123')).resolves.toBeUndefined();
     expect(softDelete).toHaveBeenCalledExactlyOnceWith({
-      account: 'person',
+      id: '123',
       deleteTime: IsNull(),
     });
   });
 
-  it.each(['', '   '])('rejects an empty account: %j', async (account) => {
-    await expect(
-      service.softDeleteUserByAccount(account),
-    ).rejects.toMatchObject({
-      status: 400,
-      message: 'account不能为空',
-    });
-    expect(softDelete).not.toHaveBeenCalled();
-  });
-
-  it('returns 404 for a missing or already deleted account', async () => {
+  it('returns 404 for a missing or already deleted user', async () => {
     softDelete.mockResolvedValue({ affected: 0 });
 
-    await expect(
-      service.softDeleteUserByAccount('person'),
-    ).rejects.toMatchObject({
+    await expect(service.softDeleteUserById('123')).rejects.toMatchObject({
       status: 404,
-      message: '账号不存在或已被删除',
+      message: '用户不存在或已被删除',
     });
   });
 
@@ -300,14 +287,12 @@ describe('UserService soft deletion', () => {
       .mockResolvedValueOnce({ affected: 1 })
       .mockResolvedValueOnce({ affected: 0 });
 
-    await service.softDeleteUserByAccount('person');
-    await expect(
-      service.softDeleteUserByAccount('person'),
-    ).rejects.toMatchObject({
+    await service.softDeleteUserById('123');
+    await expect(service.softDeleteUserById('123')).rejects.toMatchObject({
       status: 404,
     });
     expect(softDelete).toHaveBeenNthCalledWith(2, {
-      account: 'person',
+      id: '123',
       deleteTime: IsNull(),
     });
   });
@@ -316,7 +301,7 @@ describe('UserService soft deletion', () => {
     const error = new Error('database unavailable');
     softDelete.mockRejectedValue(error);
 
-    await expect(service.softDeleteUserByAccount('person')).rejects.toBe(error);
+    await expect(service.softDeleteUserById('123')).rejects.toBe(error);
   });
 
   it('includes deleted accounts in availability checks', async () => {

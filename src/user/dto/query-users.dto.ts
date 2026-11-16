@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsInt, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { Trim } from '@app/decorators';
 
 export class QueryUsersDto {
   /** 页码，从 1 开始；未传时查询第一页。 */
@@ -15,4 +16,11 @@ export class QueryUsersDto {
   @Min(1)
   @Max(100)
   pageSize: number = 10;
+
+  /** 按账号精确筛选，去除首尾空格；未传时不筛选。 */
+  @IsOptional()
+  @IsString()
+  @Length(1, 25)
+  @Trim()
+  account?: string;
 }
