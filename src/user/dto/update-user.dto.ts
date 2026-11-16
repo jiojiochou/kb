@@ -7,7 +7,7 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
-import { Trim } from '@app/common';
+import { Trim } from '@app/http-common';
 
 /** 用户资料部分更新；所有字段可省略，但至少需提供一个可更新字段。 */
 export class UpdateUserDto {

@@ -24,13 +24,13 @@
         "tsConfigPath": "libs/rsa/tsconfig.lib.json"
       }
     },
-    "common": {
+    "http-common": {
       "type": "library",
-      "root": "libs/common",
+      "root": "libs/http-common",
       "entryFile": "index",
-      "sourceRoot": "libs/common/src",
+      "sourceRoot": "libs/http-common/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/common/tsconfig.lib.json"
+        "tsConfigPath": "libs/http-common/tsconfig.lib.json"
       }
     }
   }

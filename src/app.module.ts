@@ -9,7 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { RsaModule, RsaService } from '@app/rsa';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { HttpExceptionFilter, ResponseInterceptor } from '@app/common';
+import { HttpExceptionFilter, ResponseInterceptor } from '@app/http-common';
 
 @Module({
   imports: [

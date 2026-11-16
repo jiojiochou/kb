@@ -1,4 +1,4 @@
-import { Trim } from '@app/common';
+import { Trim } from '@app/http-common';
 import { IsEmail } from 'class-validator';
 
 export class SendEmailVerificationCodeDto {
