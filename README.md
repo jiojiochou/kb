@@ -108,9 +108,21 @@ curl "http://localhost:3000/user?page=2&pageSize=10"
 成功返回 HTTP 200，统一响应结构为 `{ code: 200, message: 'success', data: 用户资料 }`，
 不包含密码和删除时间。用户 ID 为雪花 ID，超出 JS 安全整数范围，请求和响应中均使用字符串；
 ID 必须为不以 0 开头、不超过 PostgreSQL `bigint` 上限的正整数，否则返回 HTTP 400。
-用户不存在或已软删除返回 HTTP 404。按账号查找请使用 `GET /user?account=...`。
+用户不存在或已软删除返回 HTTP 404。
 接口沿用用户模块当前的无鉴权方式。
 静态路由 `GET /user/check-account` 保持为账号占用检查接口。
+
+### 按账号查询、更新、删除
+
+按 ID 的接口之外，仍保留按账号操作的接口，放在 `account/` 子路径下，
+避免纯数字账号与 `/user/:id` 混淆：
+
+- `GET /user/account/:account`：查询，规则同 `GET /user/:id`
+- `PATCH /user/account/:account`：部分更新，请求体和响应同 `PATCH /user/:id`
+- `DELETE /user/account/:account`：软删除，成功返回 HTTP 204
+
+账号首尾空格会被去除，空白账号返回 HTTP 400，账号不存在或已软删除返回 HTTP 404。
+列表接口 `GET /user?account=...` 也可按账号筛选。
 
 ## 更新用户信息
 

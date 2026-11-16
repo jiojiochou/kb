@@ -83,6 +83,34 @@ describe('UserService updates', () => {
       service.updateUser('123', { email: 'other@example.com' }),
     ).rejects.toMatchObject({ status: 409, message: '邮箱已被注册' });
   });
+
+  it('updates by account after trimming whitespace', async () => {
+    findOneBy.mockResolvedValue({ id: '123', account: 'person' } as User);
+
+    await expect(
+      service.updateUserByAccount(' person ', { displayName: 'Name' }),
+    ).resolves.toEqual({ id: '123', account: 'person' });
+    expect(update).toHaveBeenCalledExactlyOnceWith(
+      { account: 'person', deleteTime: IsNull() },
+      { displayName: 'Name' },
+    );
+    expect(findOneBy).toHaveBeenCalledExactlyOnceWith({ account: 'person' });
+  });
+
+  it('returns the account-specific 404 message', async () => {
+    update.mockResolvedValue({ affected: 0 });
+
+    await expect(
+      service.updateUserByAccount('missing', { displayName: 'Name' }),
+    ).rejects.toMatchObject({ status: 404, message: '账号不存在或已被删除' });
+  });
+
+  it.each(['', '   '])('rejects a blank account: %j', async (account) => {
+    await expect(
+      service.updateUserByAccount(account, { displayName: 'Name' }),
+    ).rejects.toMatchObject({ status: 400, message: 'account不能为空' });
+    expect(update).not.toHaveBeenCalled();
+  });
 });
 
 describe('UserService pagination', () => {
@@ -271,6 +299,31 @@ describe('UserService soft deletion', () => {
       id: '123',
       deleteTime: IsNull(),
     });
+  });
+
+  it('soft deletes an active account after trimming whitespace', async () => {
+    await expect(
+      service.softDeleteUserByAccount(' person '),
+    ).resolves.toBeUndefined();
+    expect(softDelete).toHaveBeenCalledExactlyOnceWith({
+      account: 'person',
+      deleteTime: IsNull(),
+    });
+  });
+
+  it.each(['', '   '])('rejects an empty account: %j', async (account) => {
+    await expect(
+      service.softDeleteUserByAccount(account),
+    ).rejects.toMatchObject({ status: 400, message: 'account不能为空' });
+    expect(softDelete).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for a missing or already deleted account', async () => {
+    softDelete.mockResolvedValue({ affected: 0 });
+
+    await expect(
+      service.softDeleteUserByAccount('person'),
+    ).rejects.toMatchObject({ status: 404, message: '账号不存在或已被删除' });
   });
 
   it('returns 404 for a missing or already deleted user', async () => {

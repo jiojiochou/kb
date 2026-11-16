@@ -151,6 +151,32 @@ export class UserService {
 
   /** 按 ID 更新有效用户资料；邮箱唯一性由数据库约束保证，包含已删除账户。 */
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    return await this.updateUserBy(
+      { id },
+      updateUserDto,
+      '用户不存在或已被删除',
+    );
+  }
+
+  /** 按账号更新有效用户资料；账号去除首尾空格，空账号返回 400。 */
+  async updateUserByAccount(account: string, updateUserDto: UpdateUserDto) {
+    const normalizedAccount = account?.trim();
+    if (!normalizedAccount) {
+      throw new BadRequestException('account不能为空');
+    }
+    return await this.updateUserBy(
+      { account: normalizedAccount },
+      updateUserDto,
+      '账号不存在或已被删除',
+    );
+  }
+
+  /** 按 ID 或账号定位用户后执行部分更新，两种入口共用字段过滤和错误转换。 */
+  private async updateUserBy(
+    criteria: { id: string } | { account: string },
+    updateUserDto: UpdateUserDto,
+    notFoundMessage: string,
+  ) {
     // 只提取允许修改的字段；undefined 保留原值，null 用于清空可空资料。
     const changes: UpdateUserDto = {};
     for (const field of [
@@ -172,11 +198,11 @@ export class UserService {
     try {
       // 只写入本次提交的字段，避免覆盖其他资料；同时排除已软删除账户。
       const updated = await this.userRepository.update(
-        { id, deleteTime: IsNull() },
+        { ...criteria, deleteTime: IsNull() },
         changes,
       );
       if (!updated.affected) {
-        throw new NotFoundException('用户不存在或已被删除');
+        throw new NotFoundException(notFoundMessage);
       }
     } catch (e) {
       if (e instanceof NotFoundException) {
@@ -196,9 +222,9 @@ export class UserService {
     }
 
     // 重新读取数据库中的资料和自动更新的时间；若此时已被删除，则返回 404。
-    const user = await this.userRepository.findOneBy({ id });
+    const user = await this.userRepository.findOneBy(criteria);
     if (!user) {
-      throw new NotFoundException('用户不存在或已被删除');
+      throw new NotFoundException(notFoundMessage);
     }
     // 对外响应不包含密码及软删除标记。
     const { password: _, deleteTime: __, ...result } = user;
@@ -212,6 +238,21 @@ export class UserService {
     });
     if (!result.affected) {
       throw new NotFoundException('用户不存在或已被删除');
+    }
+  }
+
+  async softDeleteUserByAccount(account: string): Promise<void> {
+    const normalizedAccount = account?.trim();
+    if (!normalizedAccount) {
+      throw new BadRequestException('account不能为空');
+    }
+
+    const result = await this.userRepository.softDelete({
+      account: normalizedAccount,
+      deleteTime: IsNull(),
+    });
+    if (!result.affected) {
+      throw new NotFoundException('账号不存在或已被删除');
     }
   }
 

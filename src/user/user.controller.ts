@@ -44,6 +44,40 @@ export class UserController {
     return { account, exists };
   }
 
+  /**
+   * 以下按账号操作的接口与按 ID 的接口并存；放在 account/ 子路径下，
+   * 避免纯数字账号与 /user/:id 混淆。
+   */
+
+  /** 按账号查询有效用户资料；不存在或已删除返回 404，不返回密码和删除时间。 */
+  @Get('account/:account')
+  async findUserByAccount(@Param('account') account: string) {
+    const user = await this.userService.findUserByAccount(account);
+    if (!user) {
+      throw new NotFoundException('账号不存在或已被删除');
+    }
+    const { password: _, deleteTime: __, ...result } = user;
+    return result;
+  }
+
+  /** 按账号部分更新用户资料，规则同 PATCH /user/:id；账号不存在或已删除返回 404。 */
+  @Patch('account/:account')
+  async updateUserByAccount(
+    @Param('account') account: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return await this.userService.updateUserByAccount(account, updateUserDto);
+  }
+
+  /** 按账号软删除用户；成功返回 204，账号不存在或已删除返回 404。 */
+  @Delete('account/:account')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async softDeleteUserByAccount(
+    @Param('account') account: string,
+  ): Promise<void> {
+    await this.userService.softDeleteUserByAccount(account);
+  }
+
   /** 按 ID 查询有效用户资料；ID 非法返回 400，不存在或已删除返回 404，不返回密码和删除时间。 */
   @Get(':id')
   async findUserById(@Param() { id }: UserIdParamDto) {
