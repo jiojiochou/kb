@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
-import { Trim } from '@app/decorators';
+import { Trim } from '@app/common';
 
 export class QueryUsersDto {
   /** 页码，从 1 开始；未传时查询第一页。 */

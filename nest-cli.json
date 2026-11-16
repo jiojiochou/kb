@@ -24,13 +24,13 @@
         "tsConfigPath": "libs/rsa/tsconfig.lib.json"
       }
     },
-    "decorators": {
+    "common": {
       "type": "library",
-      "root": "libs/decorators",
+      "root": "libs/common",
       "entryFile": "index",
-      "sourceRoot": "libs/decorators/src",
+      "sourceRoot": "libs/common/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/decorators/tsconfig.lib.json"
+        "tsConfigPath": "libs/common/tsconfig.lib.json"
       }
     }
   }

@@ -24,8 +24,8 @@
       "@app/redis/*": ["./libs/redis/src/*"],
       "@app/rsa": ["./libs/rsa/src/index.ts"],
       "@app/rsa/*": ["./libs/rsa/src/*"],
-      "@app/decorators": ["./libs/decorators/src/index.ts"],
-      "@app/decorators/*": ["./libs/decorators/src/*"]
+      "@app/common": ["./libs/common/src/index.ts"],
+      "@app/common/*": ["./libs/common/src/*"]
     }
   }
 }

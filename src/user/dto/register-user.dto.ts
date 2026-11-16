@@ -8,7 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Trim } from '@app/decorators';
+import { Trim } from '@app/common';
 
 export class RegisterUserDto {
   @IsString()

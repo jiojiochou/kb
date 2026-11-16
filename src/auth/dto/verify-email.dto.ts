@@ -1,7 +1,7 @@
 import { PickType } from '@nestjs/mapped-types';
 import { SendEmailVerificationCodeDto } from './send-email-verification-code.dto.js';
 import { IsString, Matches } from 'class-validator';
-import { Trim } from '@app/decorators';
+import { Trim } from '@app/common';
 
 /**
  * 使用PickType只继承SendEmailVerificationCodeDto的email字段，忽略新字段
