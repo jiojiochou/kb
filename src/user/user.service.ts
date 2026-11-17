@@ -256,6 +256,33 @@ export class UserService {
     }
   }
 
+  /**
+   * 按 ID 硬删除用户，从数据库中物理移除记录，不可恢复。
+   * 与软删除不同，已软删除的用户同样可以被硬删除；删除后账号和邮箱可重新注册。
+   */
+  async hardDeleteUserById(id: string): Promise<void> {
+    // Repository.delete 不附加 deleteTime 条件，会同时匹配有效和已软删除的记录。
+    const result = await this.userRepository.delete({ id });
+    if (!result.affected) {
+      throw new NotFoundException('用户不存在');
+    }
+  }
+
+  /** 按账号硬删除用户（含已软删除账户）；账号去除首尾空格，空账号返回 400。 */
+  async hardDeleteUserByAccount(account: string): Promise<void> {
+    const normalizedAccount = account?.trim();
+    if (!normalizedAccount) {
+      throw new BadRequestException('account不能为空');
+    }
+
+    const result = await this.userRepository.delete({
+      account: normalizedAccount,
+    });
+    if (!result.affected) {
+      throw new NotFoundException('账号不存在');
+    }
+  }
+
   async isAccountTaken(account: string) {
     if (!account) {
       throw new BadRequestException('account不能为空');

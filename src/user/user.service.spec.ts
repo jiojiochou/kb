@@ -365,3 +365,60 @@ describe('UserService soft deletion', () => {
     });
   });
 });
+
+describe('UserService hard deletion', () => {
+  let service: UserService;
+  let remove: Mock;
+
+  beforeEach(() => {
+    remove = vi.fn().mockResolvedValue({ affected: 1 });
+    service = new UserService(
+      {} as SnowflakeIdService,
+      { delete: remove } as unknown as Repository<User>,
+    );
+  });
+
+  it('hard deletes a user by id, including soft-deleted users', async () => {
+    await expect(service.hardDeleteUserById('123')).resolves.toBeUndefined();
+    // 不带 deleteTime 条件，已软删除的记录也会被物理删除。
+    expect(remove).toHaveBeenCalledExactlyOnceWith({ id: '123' });
+  });
+
+  it('hard deletes an account after trimming whitespace', async () => {
+    await expect(
+      service.hardDeleteUserByAccount(' person '),
+    ).resolves.toBeUndefined();
+    expect(remove).toHaveBeenCalledExactlyOnceWith({ account: 'person' });
+  });
+
+  it.each(['', '   '])('rejects an empty account: %j', async (account) => {
+    await expect(
+      service.hardDeleteUserByAccount(account),
+    ).rejects.toMatchObject({ status: 400, message: 'account不能为空' });
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the user does not exist', async () => {
+    remove.mockResolvedValue({ affected: 0 });
+
+    await expect(service.hardDeleteUserById('123')).rejects.toMatchObject({
+      status: 404,
+      message: '用户不存在',
+    });
+  });
+
+  it('returns 404 when the account does not exist', async () => {
+    remove.mockResolvedValue({ affected: 0 });
+
+    await expect(
+      service.hardDeleteUserByAccount('person'),
+    ).rejects.toMatchObject({ status: 404, message: '账号不存在' });
+  });
+
+  it('propagates database failures', async () => {
+    const error = new Error('database unavailable');
+    remove.mockRejectedValue(error);
+
+    await expect(service.hardDeleteUserById('123')).rejects.toBe(error);
+  });
+});

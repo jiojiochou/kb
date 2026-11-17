@@ -78,6 +78,15 @@ export class UserController {
     await this.userService.softDeleteUserByAccount(account);
   }
 
+  /** 按账号硬删除用户（含已软删除账户），记录不可恢复；成功返回 204，账号不存在返回 404。 */
+  @Delete('account/:account/permanent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async hardDeleteUserByAccount(
+    @Param('account') account: string,
+  ): Promise<void> {
+    await this.userService.hardDeleteUserByAccount(account);
+  }
+
   /** 按 ID 查询有效用户资料；ID 非法返回 400，不存在或已删除返回 404，不返回密码和删除时间。 */
   @Get(':id')
   async findUserById(@Param() { id }: UserIdParamDto) {
@@ -109,5 +118,12 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async softDeleteUserById(@Param() { id }: UserIdParamDto): Promise<void> {
     await this.userService.softDeleteUserById(id);
+  }
+
+  /** 按 ID 硬删除用户（含已软删除账户），记录不可恢复；成功返回 204，ID 非法返回 400，不存在返回 404。 */
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async hardDeleteUserById(@Param() { id }: UserIdParamDto): Promise<void> {
+    await this.userService.hardDeleteUserById(id);
   }
 }
