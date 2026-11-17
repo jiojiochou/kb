@@ -1,4 +1,7 @@
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
+import { RsaService } from '@app/rsa';
+import bcrypt from 'bcrypt';
 import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import type { Mock } from 'vitest';
 import { User } from './entities/user.entity.js';
@@ -15,6 +18,7 @@ describe('UserService updates', () => {
     service = new UserService(
       {} as SnowflakeIdService,
       { findOneBy, update } as unknown as Repository<User>,
+      {} as RsaService,
     );
   });
 
@@ -122,6 +126,7 @@ describe('UserService pagination', () => {
     service = new UserService(
       {} as SnowflakeIdService,
       { findAndCount } as unknown as Repository<User>,
+      {} as RsaService,
     );
   });
 
@@ -194,15 +199,18 @@ describe('UserService registration conflicts', () => {
   let service: UserService;
   let find: Mock;
   let save: Mock;
+  let decryptPassword: Mock;
+  const plainPassword = 'password123';
   const registration = {
     account: 'person',
     email: 'person@example.com',
-    password: 'password123',
+    password: 'encrypted-password',
   };
 
   beforeEach(() => {
     find = vi.fn().mockResolvedValue([]);
     save = vi.fn();
+    decryptPassword = vi.fn().mockReturnValue(plainPassword);
     service = new UserService(
       { generate: () => 123n } as unknown as SnowflakeIdService,
       {
@@ -210,8 +218,74 @@ describe('UserService registration conflicts', () => {
         create: vi.fn((data) => data),
         save,
       } as unknown as Repository<User>,
+      { decryptPassword } as unknown as RsaService,
     );
   });
+
+  it('decrypts the password and stores only its bcrypt hash', async () => {
+    save.mockImplementation(async (data) => data);
+
+    const result = await service.registerUser(registration);
+
+    expect(decryptPassword).toHaveBeenCalledExactlyOnceWith(
+      registration.password,
+    );
+    const saved = save.mock.calls[0][0] as User;
+    expect(saved.password).toMatch(/^\$2[aby]\$12\$/);
+    await expect(bcrypt.compare(plainPassword, saved.password)).resolves.toBe(
+      true,
+    );
+    expect(result).not.toHaveProperty('password');
+  });
+
+  it.each([
+    ['72 ASCII bytes', 'a'.repeat(72)],
+    ['24 Chinese characters (72 bytes)', '密'.repeat(24)],
+  ])('accepts a decrypted password of %s', async (_, password) => {
+    decryptPassword.mockReturnValue(password);
+    save.mockImplementation(async (data) => data);
+
+    await expect(service.registerUser(registration)).resolves.toBeDefined();
+  });
+
+  it.each([
+    ['7 characters', 'a'.repeat(7), '密码不能少于 8 个字符'],
+    ['73 ASCII bytes', 'a'.repeat(73), '密码不能超过 72 字节'],
+    [
+      '25 Chinese characters (75 bytes)',
+      '密'.repeat(25),
+      '密码不能超过 72 字节',
+    ],
+  ])(
+    'rejects a decrypted password of %s before querying',
+    async (_, password, message) => {
+      decryptPassword.mockReturnValue(password);
+
+      await expect(service.registerUser(registration)).rejects.toMatchObject({
+        status: 400,
+        message,
+      });
+      expect(find).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    new UnauthorizedException('账号或密码错误'),
+    new BadRequestException('无效的加密密码'),
+  ])(
+    'asks the client to refetch the public key when decryption fails: %s',
+    async (error) => {
+      decryptPassword.mockImplementation(() => {
+        throw error;
+      });
+
+      await expect(service.registerUser(registration)).rejects.toMatchObject({
+        status: 400,
+        message: '密码解密失败，请重新获取公钥后重试',
+      });
+      expect(find).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     [
@@ -290,6 +364,7 @@ describe('UserService soft deletion', () => {
     service = new UserService(
       {} as SnowflakeIdService,
       { softDelete, exists } as unknown as Repository<User>,
+      {} as RsaService,
     );
   });
 
@@ -375,6 +450,7 @@ describe('UserService hard deletion', () => {
     service = new UserService(
       {} as SnowflakeIdService,
       { delete: remove } as unknown as Repository<User>,
+      {} as RsaService,
     );
   });
 

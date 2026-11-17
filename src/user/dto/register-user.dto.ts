@@ -1,12 +1,12 @@
 import {
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
   Length,
   Matches,
   MaxLength,
-  MinLength,
 } from 'class-validator';
 import { Trim } from '@app/http-common';
 
@@ -24,10 +24,12 @@ export class RegisterUserDto {
   @Trim()
   email: string;
 
+  /**
+   * 前端用 GET /auth/public-key 返回的公钥以 RSA-OAEP-256 加密后的 base64 密文。
+   * 密文格式和明文长度在 UserService 解密时校验；不做 Trim，避免改动密文。
+   */
   @IsString()
-  @MinLength(8)
-  @MaxLength(255)
-  @Trim()
+  @IsNotEmpty()
   password: string;
 
   @IsOptional()

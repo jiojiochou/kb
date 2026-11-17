@@ -4,10 +4,27 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, IsNull } from 'typeorm';
 import { RsaService } from '@app/rsa';
 import request from 'supertest';
+import { constants, publicEncrypt } from 'node:crypto';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { AppModule } from './../src/app.module.js';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
+  // 使用临时目录中的真实密钥对，避免读写项目 secrets 目录。
+  const keyFolder = mkdtempSync(join(tmpdir(), 'kb-e2e-rsa-'));
+  const rsaService = new RsaService();
+  rsaService.initializeSecretKey(keyFolder);
+  const encryptPassword = (password: string) =>
+    publicEncrypt(
+      {
+        key: rsaService.getPublicKey().publicKey,
+        padding: constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: 'sha256',
+      },
+      Buffer.from(password),
+    ).toString('base64');
   const repository = {
     find: vi.fn().mockResolvedValue([]),
     findAndCount: vi.fn().mockResolvedValue([[], 0]),
@@ -38,7 +55,7 @@ describe('AppController (e2e)', () => {
         }),
       )
       .overrideProvider(RsaService)
-      .useValue({ initializeSecretKey: vi.fn() })
+      .useValue(Object.assign(rsaService, { initializeSecretKey: vi.fn() }))
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -50,6 +67,7 @@ describe('AppController (e2e)', () => {
 
   afterAll(async () => {
     await app?.close();
+    rmSync(keyFolder, { recursive: true, force: true });
   });
 
   it('/ (GET)', () => {
@@ -59,15 +77,30 @@ describe('AppController (e2e)', () => {
       .expect({ code: 200, message: 'success', data: 'Hello World!' });
   });
 
+  it('serves the public key without caching', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/auth/public-key')
+      .expect(200)
+      .expect('Cache-Control', 'no-store');
+
+    expect(response.body.data).toEqual(rsaService.getPublicKey());
+    expect(response.body.data.keyVersion).toMatch(/^[0-9a-f]{16}$/);
+  });
+
   it('registers through the Express adapter and excludes the password', async () => {
+    repository.save.mockClear();
+
     const response = await request(app.getHttpServer())
       .post('/user/register')
       .send({
         account: ' user.name-1 ',
         email: ' person@example.com ',
-        password: 'password123',
+        password: encryptPassword('password123'),
       })
       .expect(201);
+
+    // 入库的是解密后明文的 bcrypt 哈希，既不是明文也不是 RSA 密文。
+    expect(repository.save.mock.calls[0][0].password).toMatch(/^\$2[aby]\$/);
 
     expect(response.body).toMatchObject({
       code: 201,
@@ -85,10 +118,26 @@ describe('AppController (e2e)', () => {
       .send({
         account: 'user@name',
         email: 'person@example.com',
+        password: encryptPassword('password123'),
+      })
+      .expect(400);
+
+    expect(repository.find).not.toHaveBeenCalled();
+  });
+
+  it('rejects a password that was not RSA encrypted', async () => {
+    repository.find.mockClear();
+
+    const response = await request(app.getHttpServer())
+      .post('/user/register')
+      .send({
+        account: 'person',
+        email: 'person@example.com',
         password: 'password123',
       })
       .expect(400);
 
+    expect(response.body.message).toBe('密码解密失败，请重新获取公钥后重试');
     expect(repository.find).not.toHaveBeenCalled();
   });
 

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -12,6 +13,14 @@ import { SnowflakeIdService } from '@street-devs/nest-snowflake-id';
 import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
+import bcrypt from 'bcrypt';
+import { RsaService } from '@app/rsa';
+
+/** bcrypt 计算成本，每加 1 哈希耗时翻倍；12 是当前常用的安全与性能折中值。 */
+const PASSWORD_SALT_ROUNDS = 12;
+const PASSWORD_MIN_LENGTH = 8;
+/** bcrypt 只使用前 72 字节，超出部分会被静默截断，因此按 UTF-8 字节限制（中文占 3 字节）。 */
+const PASSWORD_MAX_BYTES = 72;
 
 @Injectable()
 export class UserService {
@@ -19,9 +28,44 @@ export class UserService {
     private readonly snowflakeIdService: SnowflakeIdService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly rsaService: RsaService,
   ) {}
+
+  /**
+   * 解密前端用 RSA 公钥加密的密码，并校验明文长度。
+   * 密文无法解密通常是前端仍在使用重新生成前的旧公钥，提示重新获取公钥。
+   */
+  private decryptPassword(encryptedPassword: string): string {
+    let password: string;
+    try {
+      password = this.rsaService.decryptPassword(encryptedPassword);
+    } catch (e) {
+      if (e instanceof HttpException) {
+        throw new BadRequestException('密码解密失败，请重新获取公钥后重试');
+      }
+      throw e;
+    }
+
+    if ([...password].length < PASSWORD_MIN_LENGTH) {
+      throw new BadRequestException(
+        `密码不能少于 ${PASSWORD_MIN_LENGTH} 个字符`,
+      );
+    }
+    if (Buffer.byteLength(password) > PASSWORD_MAX_BYTES) {
+      throw new BadRequestException(`密码不能超过 ${PASSWORD_MAX_BYTES} 字节`);
+    }
+    return password;
+  }
+
   async registerUser(registerUserDto: RegisterUserDto) {
-    const { account, email, password, ...remainder } = registerUserDto;
+    const {
+      account,
+      email,
+      password: encryptedPassword,
+      ...remainder
+    } = registerUserDto;
+    // 先解密并校验密码，格式错误的请求不访问数据库。
+    const password = this.decryptPassword(encryptedPassword);
     /**
      * 使用existsBy
      */
@@ -58,11 +102,14 @@ export class UserService {
       throw new ConflictException('邮箱已被注册');
     }
 
+    // 查重通过后再哈希，避免为必然失败的注册消耗 bcrypt 计算；数据库只保存哈希值。
+    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+
     const userData = this.userRepository.create({
       id: this.snowflakeIdService.generate().toString(),
       account,
       email,
-      password,
+      password: passwordHash,
       ...remainder,
     });
 

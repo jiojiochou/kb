@@ -3,7 +3,13 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { constants, generateKeyPairSync, privateDecrypt } from 'node:crypto';
+import {
+  constants,
+  createHash,
+  createPublicKey,
+  generateKeyPairSync,
+  privateDecrypt,
+} from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -11,6 +17,8 @@ import { join } from 'node:path';
 export class RsaService {
   private publicKey: string;
   private privateKey: string;
+  /** 公钥指纹，密钥对重新生成后随之变化，前端据此判断缓存的公钥是否过期。 */
+  private keyVersion: string;
 
   initializeSecretKey(folder = join(process.cwd(), 'secrets')) {
     const publicKeyPath = join(folder, 'rsa-public.pem');
@@ -61,17 +69,21 @@ export class RsaService {
   private loadSecretKey(publicKeyPath: string, privateKeyPath: string) {
     this.publicKey = readFileSync(publicKeyPath, 'utf8');
     this.privateKey = readFileSync(privateKeyPath, 'utf8');
+    const der = createPublicKey(this.publicKey).export({
+      type: 'spki',
+      format: 'der',
+    });
+    this.keyVersion = createHash('sha256')
+      .update(der)
+      .digest('hex')
+      .slice(0, 16);
   }
 
   getPublicKey() {
-    /**
-     * TODO:
-     * 设置响应头Cache-Control: no-store, 避免浏览器缓存旧公钥带来的密钥轮换问题
-     */
     return {
       publicKey: this.publicKey,
       algorithm: 'RSA-OAEP-256',
-      keyVersion: 'v1',
+      keyVersion: this.keyVersion,
     };
   }
 
