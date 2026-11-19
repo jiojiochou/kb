@@ -51,6 +51,10 @@ $ pnpm run start:dev
 $ pnpm run start:prod
 ```
 
+### 注册接口前端测试页
+
+启动服务后打开 [http://localhost:3000/register.html](http://localhost:3000/register.html)，即可在浏览器中测试注册接口。页面会自动请求 `/auth/public-key`，使用 RSA-OAEP-256 加密密码，再提交 `/user/register`；密码明文不会发送到后端。
+
 构建入口为 `dist/src/main.js`；`pnpm run start:prod` 使用该入口。
 应用继续使用 Express 适配器，以支持现有的 session 和 Passport 登录流程。
 

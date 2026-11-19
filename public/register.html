@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>注册接口测试台</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: #f4f7fb;
+        color: #172033;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+      .shell {
+        width: min(1060px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 64px;
+      }
+      .hero {
+        margin-bottom: 24px;
+      }
+      .eyebrow {
+        color: #5267d8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 8px 0 10px;
+        font-size: clamp(28px, 4vw, 42px);
+        letter-spacing: -0.04em;
+      }
+      .subtitle {
+        margin: 0;
+        color: #657087;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(310px, 0.85fr);
+        gap: 20px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e5eaf2;
+        border-radius: 18px;
+        box-shadow: 0 14px 40px rgba(37, 55, 99, 0.07);
+        padding: 24px;
+      }
+      .card h2 {
+        margin: 0 0 20px;
+        font-size: 18px;
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 7px;
+        color: #34405a;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      input {
+        width: 100%;
+        border: 1px solid #d9dfeb;
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: #172033;
+        font: inherit;
+        outline: none;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      input:focus {
+        border-color: #5267d8;
+        box-shadow: 0 0 0 3px rgba(82, 103, 216, 0.13);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .hint {
+        margin: 6px 0 0;
+        color: #7b8497;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 22px;
+      }
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 11px 16px;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #5267d8;
+        color: #fff;
+      }
+      button.primary:hover {
+        background: #4358c7;
+      }
+      button.secondary {
+        background: #eef1f7;
+        color: #3d4860;
+      }
+      button:disabled {
+        cursor: wait;
+        opacity: 0.6;
+      }
+      .status {
+        min-height: 20px;
+        color: #657087;
+        font-size: 13px;
+      }
+      .status.success {
+        color: #168354;
+      }
+      .status.error {
+        color: #c13c50;
+      }
+      .meta {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .meta-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid #edf0f5;
+        padding-bottom: 10px;
+      }
+      .meta-row span:first-child {
+        color: #7b8497;
+        font-size: 12px;
+      }
+      .meta-row span:last-child {
+        overflow: hidden;
+        color: #34405a;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      pre {
+        min-height: 240px;
+        max-height: 430px;
+        overflow: auto;
+        margin: 0;
+        border-radius: 12px;
+        background: #121a2a;
+        padding: 16px;
+        color: #cfe0ff;
+        font:
+          12px/1.6 ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .note {
+        margin-top: 14px;
+        color: #7b8497;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      @media (max-width: 760px) {
+        .shell {
+          padding-top: 24px;
+        }
+        .layout,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .card {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="eyebrow">API playground</div>
+        <h1>注册接口测试台</h1>
+        <p class="subtitle">
+          先获取 RSA 公钥，再在浏览器中加密密码并调用
+          <code>POST /user/register</code>。
+        </p>
+      </header>
+
+      <section class="layout">
+        <form class="card" id="register-form">
+          <h2>注册参数</h2>
+          <div class="field">
+            <label for="base-url">接口地址</label>
+            <input id="base-url" type="url" required />
+            <p class="hint">
+              同源部署时保持默认值；跨域地址需要服务端允许 CORS。
+            </p>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <label for="account">账号 *</label>
+              <input
+                id="account"
+                required
+                minlength="1"
+                maxlength="25"
+                pattern="[A-Za-z0-9_.-]+"
+                autocomplete="username"
+                placeholder="user.name-1"
+              />
+            </div>
+            <div class="field">
+              <label for="email">邮箱 *</label>
+              <input
+                id="email"
+                type="email"
+                required
+                autocomplete="email"
+                placeholder="person@example.com"
+              />
+            </div>
+          </div>
+          <div class="field">
+            <label for="password">密码 *</label>
+            <input
+              id="password"
+              type="password"
+              required
+              autocomplete="new-password"
+              placeholder="至少 8 个字符，最多 72 字节"
+            />
+            <p class="hint">
+              至少 8 个字符、最多 72 个 UTF-8 字节。密码在浏览器加密后提交。
+            </p>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <label for="display-name">昵称</label>
+              <input id="display-name" maxlength="50" placeholder="可选" />
+            </div>
+            <div class="field">
+              <label for="avatar">头像 URL</label>
+              <input
+                id="avatar"
+                type="url"
+                maxlength="2048"
+                placeholder="可选"
+              />
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <label for="first-name">名</label>
+              <input id="first-name" maxlength="50" placeholder="可选" />
+            </div>
+            <div class="field">
+              <label for="last-name">姓</label>
+              <input id="last-name" maxlength="50" placeholder="可选" />
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" id="submit-button" type="submit">
+              提交注册
+            </button>
+            <button class="secondary" id="clear-button" type="button">
+              清空
+            </button>
+            <span class="status" id="status" role="status"></span>
+          </div>
+        </form>
+
+        <aside class="card">
+          <h2>请求状态</h2>
+          <div class="meta">
+            <div class="meta-row">
+              <span>公钥版本</span><span id="key-version">未获取</span>
+            </div>
+            <div class="meta-row">
+              <span>请求方法</span><span>POST /user/register</span>
+            </div>
+            <div class="meta-row">
+              <span>最近状态码</span><span id="http-status">—</span>
+            </div>
+          </div>
+          <pre id="response">点击“提交注册”后，这里会显示接口响应。</pre>
+          <p class="note">
+            响应会保留完整的统一结构
+            <code>{ code, message, data }</code>，便于核对成功和校验失败场景。
+          </p>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const form = $('register-form');
+      const status = $('status');
+      const response = $('response');
+      const submitButton = $('submit-button');
+      $('base-url').value = window.location.origin;
+
+      const setStatus = (message, type = '') => {
+        status.textContent = message;
+        status.className = `status ${type}`;
+      };
+
+      const pemToDer = (pem) => {
+        const base64 = pem.replace(
+          /-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g,
+          '',
+        );
+        const bytes = Uint8Array.from(atob(base64), (char) =>
+          char.charCodeAt(0),
+        );
+        return bytes.buffer;
+      };
+
+      const toBase64 = (buffer) => {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let index = 0; index < bytes.length; index += 0x8000) {
+          binary += String.fromCharCode(
+            ...bytes.subarray(index, index + 0x8000),
+          );
+        }
+        return btoa(binary);
+      };
+
+      const getBaseUrl = () => $('base-url').value.trim().replace(/\/$/, '');
+
+      async function encryptPassword(publicKeyPem, password) {
+        const key = await crypto.subtle.importKey(
+          'spki',
+          pemToDer(publicKeyPem),
+          { name: 'RSA-OAEP', hash: 'SHA-256' },
+          false,
+          ['encrypt'],
+        );
+        return toBase64(
+          await crypto.subtle.encrypt(
+            { name: 'RSA-OAEP' },
+            key,
+            new TextEncoder().encode(password),
+          ),
+        );
+      }
+
+      const getValue = (id) => $(id).value.trim();
+      const optional = (payload, key, id) => {
+        const value = getValue(id);
+        if (value) payload[key] = value;
+      };
+
+      $('clear-button').addEventListener('click', () => {
+        form.reset();
+        $('base-url').value = window.location.origin;
+        $('key-version').textContent = '未获取';
+        $('http-status').textContent = '—';
+        response.textContent = '点击“提交注册”后，这里会显示接口响应。';
+        setStatus('');
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        submitButton.disabled = true;
+        $('clear-button').disabled = true;
+        setStatus('获取公钥并加密密码…');
+        $('http-status').textContent = '—';
+        $('key-version').textContent = '未获取';
+        response.textContent = '请求处理中…';
+        let receivedResponse = false;
+
+        try {
+          const baseUrl = getBaseUrl();
+          const password = $('password').value;
+          if (!crypto.subtle) {
+            throw new Error(
+              '浏览器加密需要安全上下文，请使用 http://localhost 或 HTTPS 打开此页面',
+            );
+          }
+          if ([...password].length < 8) {
+            throw new Error('密码不能少于 8 个字符');
+          }
+          if (new TextEncoder().encode(password).byteLength > 72) {
+            throw new Error('密码 UTF-8 字节数不能超过 72');
+          }
+
+          const keyResponse = await fetch(`${baseUrl}/auth/public-key`, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(15000),
+          });
+          const keyBody = await keyResponse.json();
+          if (!keyResponse.ok || !keyBody.data?.publicKey) {
+            $('http-status').textContent = String(keyResponse.status);
+            response.textContent = JSON.stringify(keyBody, null, 2);
+            receivedResponse = true;
+            throw new Error(
+              keyBody.message || `获取公钥失败（HTTP ${keyResponse.status}）`,
+            );
+          }
+          $('key-version').textContent = keyBody.data.keyVersion || '未知';
+
+          const payload = {
+            account: getValue('account'),
+            email: getValue('email'),
+            password: await encryptPassword(keyBody.data.publicKey, password),
+          };
+          optional(payload, 'displayName', 'display-name');
+          optional(payload, 'firstName', 'first-name');
+          optional(payload, 'lastName', 'last-name');
+          optional(payload, 'avatar', 'avatar');
+
+          setStatus('提交注册请求…');
+          const registerResponse = await fetch(`${baseUrl}/user/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(15000),
+          });
+          const text = await registerResponse.text();
+          let body;
+          try {
+            body = JSON.parse(text);
+          } catch {
+            body = text || null;
+          }
+          $('http-status').textContent =
+            `${registerResponse.status} ${registerResponse.statusText}`;
+          response.textContent = JSON.stringify(body, null, 2);
+          receivedResponse = true;
+          if (!registerResponse.ok)
+            throw new Error(
+              body?.message || `请求失败（HTTP ${registerResponse.status}）`,
+            );
+          setStatus('注册成功', 'success');
+        } catch (error) {
+          if (!receivedResponse)
+            response.textContent =
+              error instanceof Error ? error.message : String(error);
+          setStatus(
+            error instanceof Error ? error.message : '请求失败',
+            'error',
+          );
+        } finally {
+          submitButton.disabled = false;
+          $('clear-button').disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
